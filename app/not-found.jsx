@@ -10,7 +10,7 @@ export default function NotFound() {
       <AnimatedBackground />
 
       {/* Background with subtle wave effect */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] to-[#1e3a8a] opacity-50 z-0">
+      <div className="absolute inset-0 z-0">
         <div className="wave-animation"></div>
       </div>
 
