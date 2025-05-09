@@ -1,0 +1,27 @@
+# Portfolio Website Dependencies
+
+# Core Dependencies
+next.js >= 14.0.0
+react >= 18.0.0
+react-dom >= 18.0.0
+
+# Styling
+tailwindcss >= 3.3.0
+postcss >= 8.4.0
+autoprefixer >= 10.4.0
+
+# Icons and UI
+lucide-react >= 0.294.0
+
+# Animation and Effects
+framer-motion >= 10.16.4
+
+# Development Tools
+eslint >= 8.0.0
+eslint-config-next >= 14.0.0
+
+# To install these dependencies in a Next.js project:
+# 1. Create a new Next.js project: npx create-next-app@latest portfolio-website
+# 2. Install additional dependencies: npm install lucide-react framer-motion
+# 3. Set up Tailwind CSS: npm install -D tailwindcss postcss autoprefixer
+#    npx tailwindcss init -p
