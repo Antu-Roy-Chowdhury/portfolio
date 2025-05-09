@@ -93,7 +93,7 @@ body {
 .skill-item:hover {
   transform: scale(1.05);
 }
-/* Wave Animation for Background */
+/* /* Wave Animation for Background */
 .wave-animation {
   position: absolute;
   bottom: 0;
@@ -111,7 +111,7 @@ body {
   100% {
     background-position: 1000px 0;
   }
-}
+} */
 
 /* Scattered Papers Animation */
 .paper {
@@ -138,7 +138,15 @@ body {
     opacity: 0.7;
   }
 }
+.glass-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
 
+/* Glowing Text */
+.glow-text {
+  text-shadow: 0 0 10px rgba(30, 159, 171, 0.5), 0 0 20px rgba(30, 159, 171, 0.3);
+}
 
 @keyframes fadeIn {
   from {
