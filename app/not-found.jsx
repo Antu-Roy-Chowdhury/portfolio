@@ -35,7 +35,6 @@ export default function NotFound() {
         <h1
           className="text-9xl font-bold glow-text relative"
           style={{
-            backgroundImage: "url('https://www.transparenttextures.com/patterns/old-map.png')",
             backgroundSize: "cover",
             backgroundClip: "text",
             WebkitBackgroundClip: "text",
