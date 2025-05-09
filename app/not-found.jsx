@@ -30,7 +30,7 @@ export default function NotFound() {
       </div>
 
       {/* Main Content */}
-      <div className="glass-card p-12 rounded-lg text-center max-w-lg relative z-20 bg-[rgba(255,255,255,0.05)] backdrop-blur-md">
+      <div className="glass-card p-12 rounded-lg text-center max-w-lg relative z-20">
         {/* 404 Text with Map Background */}
         <h1
           className="text-9xl font-bold glow-text relative"
