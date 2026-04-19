@@ -1,9 +1,15 @@
-import { Inter } from "next/font/google"
+import { Manrope, Space_Grotesk } from "next/font/google"
 import "./globals.css"
 
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-body",
+})
 
-const inter = Inter({ subsets: ["latin"] })
-// insert favicons.PNG in public folder
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-display",
+})
 
 
 export const metadata = {
@@ -20,7 +26,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className={`${inter.className} bg-[#0a0a0a] text-white min-h-screen`}>{children}</body>
+      <body className={`${manrope.variable} ${spaceGrotesk.variable} min-h-screen bg-[#05080d] text-white antialiased`}>
+        {children}
+      </body>
     </html>
   )
 }

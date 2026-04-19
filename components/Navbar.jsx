@@ -4,9 +4,9 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
-import Image from "next/image";
+import Image from "next/image"
 
-export default function Navbar() {
+export default function Navbar({ navigationLinks = [], siteMeta }) {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const pathname = usePathname()
@@ -24,115 +24,64 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  const isActive = (path) => {
-    return pathname === path
-  }
+  const isActive = (path) => pathname === path
+
+  useEffect(() => {
+    setIsOpen(false)
+  }, [pathname])
 
   return (
     <nav
-    
       id="navbar"
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-[#0a0a0a]/90 backdrop-blur-md shadow-lg" : "bg-transparent"}`}
+      className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? "border-b border-white/10 bg-[#070b10]/85 backdrop-blur-xl" : "bg-transparent"}`}
     >
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
-          {/* add logo here */}
-          {/* <div className="w-10 h-10 bg-gray-800 rounded-full"></div> */}
+      <div className="mx-auto flex max-w-[88rem] items-center justify-between px-5 py-4">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 shadow-[0_0_40px_rgba(125,211,252,0.08)]">
+            <Image src={siteMeta.logo} alt={siteMeta.shortName} width={28} height={28} className="h-7 w-auto" />
+          </div>
           <div>
-            <Image
-              src="/skylight.png"
-              alt="Logo"
-              width={120}
-              height={100}
-              className="rounded-full"/>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-200/80">{siteMeta.shortName}</p>
+            <p className="text-xs text-slate-400">Portfolio</p>
           </div>
-        
+        </Link>
 
-          <div className="hidden md:flex space-x-8">
-            <Link href="/" className={`navbar-item transition-colors ${isActive("/") ? "neon-text" : "hover:neon-text"}`}>
-              HOME
-            </Link>
-            <Link href="/about" className={`navbar-item transition-colors ${isActive("/about") ? "neon-text" : "hover:neon-text"}`}>
-              ABOUT
-            </Link>
+        <div className="hidden items-center gap-7 md:flex">
+          {navigationLinks.map((link) => (
             <Link
-              href="/projects"
-              className={`navbar-item transition-colors ${isActive("/projects") ? "neon-text" : "hover:neon-text"}`}
+              key={link.href}
+              href={link.href}
+              className={`text-sm transition-colors ${isActive(link.href) ? "text-sky-200" : "text-slate-300 hover:text-white"}`}
             >
-              PROJECTS
+              {link.label}
             </Link>
-            <Link
-              href="/skills"
-              className={`navbar-item transition-colors ${isActive("/skills") ? "neon-text" : "hover:neon-text"}`}
-            >
-              SKILLS
-            </Link>
-            <Link
-              href="/research"
-              className={`navbar-item transition-colors ${isActive("/research") ? "neon-text" : "hover:neon-text"}`}
-            >
-              RESEARCH
-            </Link>
-            <Link
-              href="/contact"
-              className={`navbar-item transition-colors ${isActive("/contact") ? "neon-text" : "hover:neon-text"}`}
-            >
-              CONTACT
-            </Link>
-          </div>
-
-          <button className="md:hidden text-white" onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          ))}
+          <Link href="/contact" className="rounded-full border border-sky-300/30 bg-sky-300/10 px-4 py-2 text-sm text-sky-100 transition hover:bg-sky-300/15">
+            Contact me
+          </Link>
         </div>
+
+        <button
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white md:hidden"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle menu"
+        >
+          {isOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
       </div>
 
-      {/* Mobile menu */}
       {isOpen && (
-        <div className="md:hidden bg-[#0a0a0a] border-t border-gray-800">
-          <div className="container mx-auto px-4 py-4 flex flex-col space-y-4">
-            <Link
-              href="/"
-              className={`py-2 transition-colors ${isActive("/") ? "neon-text" : "hover:neon-text"}`}
-              onClick={() => setIsOpen(false)}
-            >
-              HOME
-            </Link>
-            <Link
-              href="/about"
-              className={`py-2 transition-colors ${isActive("/about") ? "neon-text" : "hover:neon-text"}`}
-              onClick={() => setIsOpen(false)}
-            >
-              ABOUT
-            </Link>
-            <Link
-              href="/projects"
-              className={`py-2 transition-colors ${isActive("/projects") ? "neon-text" : "hover:neon-text"}`}
-              onClick={() => setIsOpen(false)}
-            >
-              PROJECTS
-            </Link>
-            <Link
-              href="/skills"
-              className={`py-2 transition-colors ${isActive("/skills") ? "neon-text" : "hover:neon-text"}`}
-              onClick={() => setIsOpen(false)}
-            >
-              SKILLS
-            </Link>
-            <Link
-              href="/research"
-              className={`py-2 transition-colors ${isActive("/research") ? "neon-text" : "hover:neon-text"}`}
-              onClick={() => setIsOpen(false)}
-            >
-              RESEARCH
-            </Link>
-            <Link
-              href="/contact"
-              className={`py-2 transition-colors ${isActive("/contact") ? "neon-text" : "hover:neon-text"}`}
-              onClick={() => setIsOpen(false)}
-            >
-              CONTACT
-            </Link>
+        <div className="border-t border-white/10 bg-[#0a1017]/95 px-5 py-4 md:hidden">
+          <div className="mx-auto flex max-w-[88rem] flex-col gap-2">
+            {navigationLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`rounded-2xl px-4 py-3 text-sm ${isActive(link.href) ? "bg-sky-300/10 text-sky-200" : "text-slate-200 hover:bg-white/5"}`}
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
       )}
