@@ -44,25 +44,21 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-md">
-            <div className="absolute inset-0 -translate-x-5 translate-y-5 rounded-[2.5rem] bg-gradient-to-br from-sky-300/25 via-cyan-300/10 to-transparent blur-2xl" />
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#0d131b]/85 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.45)]">
-              <div className="absolute inset-x-6 top-5 h-px bg-gradient-to-r from-transparent via-sky-200/50 to-transparent" />
-              <div className="relative aspect-[4/5] overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#0a0f15]">
-                <Image src={siteMeta.portrait} alt={siteMeta.name} fill className="object-cover" priority />
-              </div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Focus</p>
-                  <p className="mt-2 text-sm text-slate-200">Full-stack product work, research-led thinking, and visual design quality.</p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Base</p>
-                  <p className="mt-2 text-sm text-slate-200">{siteMeta.location}</p>
-                </div>
-              </div>
-            </div>
+        <div className="relative mx-auto w-full max-w-md">
+          {/* The soft glow behind the image stays, as it adds depth */}
+          <div className="absolute inset-0 -translate-x-5 translate-y-5 rounded-full bg-gradient-to-br from-sky-300/25 via-cyan-300/10 to-transparent blur-3xl" />
+          
+          {/* Inner Image Container - Made into an Oval */}
+          <div className="relative aspect-[4/5] overflow-hidden rounded-full">
+            <Image 
+              src={siteMeta.portrait} 
+              alt={siteMeta.name} 
+              fill 
+              className="object-cover object-top" 
+              priority 
+            />
           </div>
+        </div>
         </div>
       </section>
 

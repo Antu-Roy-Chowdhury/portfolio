@@ -37,12 +37,8 @@ export default function Navbar({ navigationLinks = [], siteMeta }) {
     >
       <div className="mx-auto flex max-w-[88rem] items-center justify-between px-5 py-4">
         <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 shadow-[0_0_40px_rgba(125,211,252,0.08)]">
-            <Image src={siteMeta.logo} alt={siteMeta.shortName} width={28} height={28} className="h-7 w-auto" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-200/80">{siteMeta.shortName}</p>
-            <p className="text-xs text-slate-400">Portfolio</p>
+          <div className="flex items-center justify-center shadow-[0_0_40px_rgba(125,211,252,0.08)]">
+            <Image src={siteMeta.logo} alt={siteMeta.shortName} width={179} height={45} className="w-auto h-8" />
           </div>
         </Link>
 

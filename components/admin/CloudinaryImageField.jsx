@@ -6,6 +6,7 @@ export default function CloudinaryImageField({
   name,
   label,
   defaultValue = "",
+  folder = "portfolio",
   placeholder = "https://res.cloudinary.com/...",
 }) {
   const [value, setValue] = useState(defaultValue)
@@ -26,7 +27,7 @@ export default function CloudinaryImageField({
       const formData = new FormData()
       formData.append("file", file)
       formData.append("upload_preset", preset)
-      formData.append("folder", "portfolio")
+      formData.append("folder", folder)
 
       const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: "POST",
@@ -72,7 +73,7 @@ export default function CloudinaryImageField({
           <p className="text-xs text-amber-300/80">Add Cloudinary env vars to enable direct uploads. Manual image URLs still work.</p>
         ) : null}
         {cloudName && preset ? (
-          <p className="text-xs text-slate-500">Uses unsigned preset `{preset}` in cloud `{cloudName}`.</p>
+          <p className="text-xs text-slate-500">Uses unsigned preset `{preset}` in cloud `{cloudName}` and uploads into `{folder}`.</p>
         ) : null}
         {status ? <p className="text-xs text-slate-400">{status}</p> : null}
       </div>

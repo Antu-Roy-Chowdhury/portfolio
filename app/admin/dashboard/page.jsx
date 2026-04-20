@@ -1,16 +1,20 @@
 import AdminTabs from "@/components/admin/AdminTabs"
 import CloudinaryImageField from "@/components/admin/CloudinaryImageField"
 import {
+  deleteEducationAction,
   deleteAchievementAction,
   deleteCertificationAction,
   deleteProjectAction,
   deleteResearchAction,
+  deleteSocialLinkAction,
   logoutAction,
+  saveEducationAction,
   saveAchievementAction,
   saveCertificationAction,
   saveProjectAction,
   saveResearchAction,
   saveSiteSettingsAction,
+  saveSocialLinkAction,
 } from "@/app/admin/actions"
 import { requireAdmin } from "@/lib/admin-auth"
 import { getAdminDashboardData } from "@/lib/admin-data"
@@ -54,7 +58,7 @@ function toDateInputValue(value) {
 
 export default async function AdminDashboardPage() {
   const session = await requireAdmin()
-  const { achievements, certifications, projects, researchItems, siteSettings } = await getAdminDashboardData()
+  const { achievements, certifications, educationItems, projects, researchItems, siteSettings, socialLinks } = await getAdminDashboardData()
 
   const adminSections = [
     {
@@ -96,8 +100,8 @@ export default async function AdminDashboardPage() {
             <TextField label="Phone" name="phone" defaultValue={siteSettings?.phone || ""} />
             <TextField label="Location" name="location" defaultValue={siteSettings?.location || ""} />
             <TextField label="Resume URL" name="resume_url" defaultValue={siteSettings?.resume_url || ""} />
-            <CloudinaryImageField name="portrait_image_url" label="Portrait image URL" defaultValue={siteSettings?.portrait_image_url || ""} />
-            <CloudinaryImageField name="logo_url" label="Logo image URL" defaultValue={siteSettings?.logo_url || ""} />
+            <CloudinaryImageField name="portrait_image_url" label="Portrait image URL" defaultValue={siteSettings?.portrait_image_url || ""} folder="portfolio/portrait" />
+            <CloudinaryImageField name="logo_url" label="Logo image URL" defaultValue={siteSettings?.logo_url || ""} folder="portfolio/brand" />
             <TextField label="Dot background color" name="dot_bg_color" defaultValue={siteSettings?.dot_bg_color || "#2a2a2a"} />
             <TextField label="Dot highlight color" name="dot_highlight_color" defaultValue={siteSettings?.dot_highlight_color || "#ffffff"} />
             <TextField label="Dot hover glow" name="dot_hover_glow" defaultValue={siteSettings?.dot_hover_glow || "#7dd3fc"} />
@@ -140,7 +144,7 @@ export default async function AdminDashboardPage() {
             <TextField label="Case study URL" name="case_study_url" placeholder="Optional" />
             <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
             <div className="lg:col-span-2">
-              <CloudinaryImageField name="cover_image_url" label="Cover image URL" />
+              <CloudinaryImageField name="cover_image_url" label="Cover image URL" folder="portfolio/projects" />
             </div>
             <div className="lg:col-span-2">
               <TextField label="Tech stack" name="tech_stack" placeholder="React, Next.js, PostgreSQL" />
@@ -178,7 +182,7 @@ export default async function AdminDashboardPage() {
                   <TextField label="Case study URL" name="case_study_url" defaultValue={project.case_study_url || ""} />
                   <TextField label="Sort order" name="sort_order" type="number" defaultValue={project.sort_order ?? 0} />
                   <div className="lg:col-span-2">
-                    <CloudinaryImageField name="cover_image_url" label="Cover image URL" defaultValue={project.cover_image_url || ""} />
+                    <CloudinaryImageField name="cover_image_url" label="Cover image URL" defaultValue={project.cover_image_url || ""} folder="portfolio/projects" />
                   </div>
                   <div className="lg:col-span-2">
                     <TextField label="Tech stack" name="tech_stack" defaultValue={(project.tech_stack || []).join(", ")} />
@@ -225,7 +229,7 @@ export default async function AdminDashboardPage() {
             <TextField label="Credential ID" name="credential_id" />
             <TextField label="Credential URL" name="credential_url" />
             <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
-            <CloudinaryImageField name="image_url" label="Certificate image URL" />
+            <CloudinaryImageField name="image_url" label="Certificate image URL" folder="portfolio/certifications" />
             <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
               <input id="cert_featured_new" name="is_featured" type="checkbox" />
               <label htmlFor="cert_featured_new" className="text-sm text-slate-300">Featured certificate</label>
@@ -246,7 +250,7 @@ export default async function AdminDashboardPage() {
                   <TextField label="Credential ID" name="credential_id" defaultValue={item.credential_id || ""} />
                   <TextField label="Credential URL" name="credential_url" defaultValue={item.credential_url || ""} />
                   <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
-                  <CloudinaryImageField name="image_url" label="Certificate image URL" defaultValue={item.image_url || ""} />
+                  <CloudinaryImageField name="image_url" label="Certificate image URL" defaultValue={item.image_url || ""} folder="portfolio/certifications" />
                   <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
                     <input id={`cert-featured-${item.id}`} name="is_featured" type="checkbox" defaultChecked={item.is_featured} />
                     <label htmlFor={`cert-featured-${item.id}`} className="text-sm text-slate-300">Featured certificate</label>
@@ -259,6 +263,70 @@ export default async function AdminDashboardPage() {
                   <input type="hidden" name="id" defaultValue={item.id} />
                   <button type="submit" className="text-sm text-rose-300 transition hover:text-rose-200">
                     Delete certification
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+        </AdminSection>
+      ),
+    },
+    {
+      id: "education",
+      label: "Education",
+      content: (
+        <AdminSection title="Education" description="Keep academic details editable here, including future degree updates, CGPA, and descriptions.">
+          <form action={saveEducationAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+            <TextField label="Degree" name="degree" required />
+            <TextField label="Institution" name="institution" required />
+            <TextField label="Field of study" name="field_of_study" />
+            <TextField label="Start year" name="start_year" type="number" />
+            <TextField label="End year" name="end_year" type="number" />
+            <TextField label="Result" name="result" />
+            <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
+            <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
+              <input id="education_current_new" name="is_current" type="checkbox" />
+              <label htmlFor="education_current_new" className="text-sm text-slate-300">Currently ongoing</label>
+            </div>
+            <div className="lg:col-span-2">
+              <TextAreaField label="Description" name="description" rows={4} />
+            </div>
+            <div className="lg:col-span-2">
+              <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                Add education
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-8 space-y-5">
+            {educationItems.map((item) => (
+              <div key={item.id} className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5">
+                <form action={saveEducationAction} className="grid gap-5 lg:grid-cols-2">
+                  <input type="hidden" name="id" defaultValue={item.id} />
+                  <TextField label="Degree" name="degree" defaultValue={item.degree} required />
+                  <TextField label="Institution" name="institution" defaultValue={item.institution} required />
+                  <TextField label="Field of study" name="field_of_study" defaultValue={item.field_of_study || ""} />
+                  <TextField label="Start year" name="start_year" type="number" defaultValue={item.start_year || ""} />
+                  <TextField label="End year" name="end_year" type="number" defaultValue={item.end_year || ""} />
+                  <TextField label="Result" name="result" defaultValue={item.result || ""} />
+                  <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
+                  <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
+                    <input id={`education-current-${item.id}`} name="is_current" type="checkbox" defaultChecked={item.is_current} />
+                    <label htmlFor={`education-current-${item.id}`} className="text-sm text-slate-300">Currently ongoing</label>
+                  </div>
+                  <div className="lg:col-span-2">
+                    <TextAreaField label="Description" name="description" defaultValue={item.description || ""} rows={4} />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                      Save education
+                    </button>
+                  </div>
+                </form>
+                <form action={deleteEducationAction} className="mt-4">
+                  <input type="hidden" name="id" defaultValue={item.id} />
+                  <button type="submit" className="text-sm text-rose-300 transition hover:text-rose-200">
+                    Delete education
                   </button>
                 </form>
               </div>
@@ -281,7 +349,7 @@ export default async function AdminDashboardPage() {
             <TextField label="Paper URL" name="paper_url" />
             <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
             <TextField label="Tags" name="tags" placeholder="Machine Learning, Accessibility" />
-            <CloudinaryImageField name="image_url" label="Research image URL" />
+            <CloudinaryImageField name="image_url" label="Research image URL" folder="portfolio/research" />
             <TextAreaField label="Short description" name="short_description" rows={3} />
             <TextAreaField label="Abstract" name="abstract" rows={5} />
             <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
@@ -306,7 +374,7 @@ export default async function AdminDashboardPage() {
                   <TextField label="Paper URL" name="paper_url" defaultValue={item.paper_url || ""} />
                   <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
                   <TextField label="Tags" name="tags" defaultValue={(item.tags || []).join(", ")} />
-                  <CloudinaryImageField name="image_url" label="Research image URL" defaultValue={item.image_url || ""} />
+                  <CloudinaryImageField name="image_url" label="Research image URL" defaultValue={item.image_url || ""} folder="portfolio/research" />
                   <TextAreaField label="Short description" name="short_description" defaultValue={item.short_description || ""} rows={3} />
                   <TextAreaField label="Abstract" name="abstract" defaultValue={item.abstract || ""} rows={5} />
                   <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
@@ -330,6 +398,58 @@ export default async function AdminDashboardPage() {
       ),
     },
     {
+      id: "socials",
+      label: "Social Links",
+      content: (
+        <AdminSection title="Social links" description="Manage your complete social tree here, including Facebook, Instagram, LinkedIn, Google Scholar, ResearchGate, X, Codeforces, Reddit, and more.">
+          <form action={saveSocialLinkAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+            <TextField label="Platform" name="platform" required placeholder="facebook" />
+            <TextField label="Label" name="label" placeholder="Facebook" />
+            <TextField label="URL" name="url" required placeholder="https://..." />
+            <TextField label="Icon name" name="icon_name" placeholder="Optional" />
+            <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
+            <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
+              <input id="social_visible_new" name="is_visible" type="checkbox" defaultChecked />
+              <label htmlFor="social_visible_new" className="text-sm text-slate-300">Visible on portfolio</label>
+            </div>
+            <div className="lg:col-span-2">
+              <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                Add social link
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-8 grid gap-5 lg:grid-cols-2">
+            {socialLinks.map((item) => (
+              <div key={item.id} className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5">
+                <form action={saveSocialLinkAction} className="grid gap-5">
+                  <input type="hidden" name="id" defaultValue={item.id} />
+                  <TextField label="Platform" name="platform" defaultValue={item.platform} required />
+                  <TextField label="Label" name="label" defaultValue={item.label || ""} />
+                  <TextField label="URL" name="url" defaultValue={item.url} required />
+                  <TextField label="Icon name" name="icon_name" defaultValue={item.icon_name || ""} />
+                  <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
+                  <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
+                    <input id={`social-visible-${item.id}`} name="is_visible" type="checkbox" defaultChecked={item.is_visible} />
+                    <label htmlFor={`social-visible-${item.id}`} className="text-sm text-slate-300">Visible on portfolio</label>
+                  </div>
+                  <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                    Save social link
+                  </button>
+                </form>
+                <form action={deleteSocialLinkAction} className="mt-4">
+                  <input type="hidden" name="id" defaultValue={item.id} />
+                  <button type="submit" className="text-sm text-rose-300 transition hover:text-rose-200">
+                    Delete social link
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+        </AdminSection>
+      ),
+    },
+    {
       id: "achievements",
       label: "Achievements",
       content: (
@@ -340,7 +460,7 @@ export default async function AdminDashboardPage() {
             <TextField label="Achievement date" name="achievement_date" type="date" />
             <TextField label="Tags" name="tags" placeholder="Leadership, Contest, Award" />
             <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
-            <CloudinaryImageField name="image_url" label="Achievement image URL" />
+            <CloudinaryImageField name="image_url" label="Achievement image URL" folder="portfolio/achievements" />
             <div className="lg:col-span-2">
               <TextAreaField label="Description" name="description" rows={4} />
             </div>
@@ -365,7 +485,7 @@ export default async function AdminDashboardPage() {
                   <TextField label="Achievement date" name="achievement_date" type="date" defaultValue={toDateInputValue(item.achievement_date)} />
                   <TextField label="Tags" name="tags" defaultValue={(item.tags || []).join(", ")} />
                   <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
-                  <CloudinaryImageField name="image_url" label="Achievement image URL" defaultValue={item.image_url || ""} />
+                  <CloudinaryImageField name="image_url" label="Achievement image URL" defaultValue={item.image_url || ""} folder="portfolio/achievements" />
                   <TextAreaField label="Description" name="description" defaultValue={item.description || ""} rows={4} />
                   <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
                     <input id={`achievement-featured-${item.id}`} name="featured" type="checkbox" defaultChecked={item.featured} />
