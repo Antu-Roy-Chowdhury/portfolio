@@ -10,7 +10,7 @@ export default async function Home() {
     <SiteShell>
       <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-[88rem] items-center px-5 pb-16 pt-10">
         <div className="grid w-full gap-12 lg:grid-cols-[1.25fr_0.75fr] lg:items-center xl:gap-20">
-          <div className="space-y-8">
+          <div className="order-2 space-y-8 lg:order-1">
             <div className="inline-flex rounded-full border border-sky-300/20 bg-sky-300/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-sky-100/90">
               {hero.badge}
             </div>
@@ -44,21 +44,28 @@ export default async function Home() {
             </div>
           </div>
 
-        <div className="relative mx-auto w-full max-w-md">
-          {/* The soft glow behind the image stays, as it adds depth */}
-          <div className="absolute inset-0 -translate-x-5 translate-y-5 rounded-full bg-gradient-to-br from-sky-300/25 via-cyan-300/10 to-transparent blur-3xl" />
-          
-          {/* Inner Image Container - Made into an Oval */}
-          <div className="relative aspect-[4/5] overflow-hidden rounded-full">
-            <Image 
-              src={siteMeta.portrait} 
-              alt={siteMeta.name} 
-              fill 
-              className="object-cover object-top" 
-              priority 
-            />
+          {/* <div className="order-1 relative mx-auto w-full max-w-[17rem] sm:max-w-[21rem] lg:order-2 lg:max-w-[29rem] xl:max-w-[32rem]">
+            <div className="absolute inset-x-8 bottom-2 top-10 rounded-full bg-sky-300/10 blur-3xl" />
+            <div className="absolute inset-0 rounded-full border border-white/10" />
+            <div className="absolute inset-[8%] rounded-full border border-sky-300/20" />
+            <div className="relative aspect-[3/4] overflow-hidden rounded-full">
+              <Image src={siteMeta.portrait} alt={siteMeta.name} fill className="object-contain object-top scale-[1.04]" priority />
+            </div>
+          </div> */}
+          <div className="order-1 relative mx-auto w-full max-w-[17rem] sm:max-w-[21rem] lg:order-2 lg:max-w-[29rem] xl:max-w-[32rem]">
+            {/* The "Glow" behind the image */}
+            <div className="absolute inset-x-8 bottom-2 top-10 rounded-full bg-sky-300/15 blur-3xl" />
+            {/* The Main Oval Container */}
+            <div className="relative aspect-[5/6] overflow-hidden rounded-full shadow-xl">
+              <Image 
+                src={siteMeta.portrait} 
+                alt={siteMeta.name} 
+                fill 
+                className="object-cover object-top scale-[1]" 
+                priority 
+              />
+            </div>
           </div>
-        </div>
         </div>
       </section>
 

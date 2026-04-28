@@ -1,4 +1,5 @@
 import SiteShell from "@/components/SiteShell"
+import PageHeroGraphic from "@/components/PageHeroGraphic"
 import { getCertifications, getEducationItems, getExperienceItems, getSiteChrome } from "@/lib/portfolio-content"
 
 export default async function AboutPage() {
@@ -12,10 +13,18 @@ export default async function AboutPage() {
   return (
     <SiteShell>
       <section className="page-section">
-        <div className="page-intro">
-          <p className="section-kicker">About</p>
-          <h1 className="page-title">A broader picture of who I am and how I work.</h1>
-          <p className="page-copy">{siteMeta.about}</p>
+        <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+          <div className="page-intro">
+            <p className="section-kicker">About</p>
+            <h1 className="page-title">A broader picture of who I am and how I work.</h1>
+            <p className="page-copy">{siteMeta.about}</p>
+          </div>
+          <PageHeroGraphic
+            eyebrow="Working style"
+            title="Research-minded, product-aware, and comfortable across engineering layers."
+            points={["Systems before noise", "Useful interfaces over decoration", "Academic depth with practical output"]}
+            variant="flow"
+          />
         </div>
 
         <div className="mt-14 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -89,13 +98,20 @@ export default async function AboutPage() {
               <h2 className="panel-title">Certifications</h2>
               <div className="mt-6 space-y-5">
                 {certifications.map((item) => (
-                  <div key={item.credentialId} className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5">
+                  <div key={item.credentialId} className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/10">
+                    <div className="flex items-center gap-2 border-b border-white/10 bg-white/5 px-5 py-3">
+                      <span className="h-2.5 w-2.5 rounded-full bg-rose-300/80" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-amber-300/80" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-300/80" />
+                    </div>
+                    <div className="p-5">
                     <h3 className="text-lg font-semibold text-white">{item.title}</h3>
                     <p className="mt-1 text-sm text-sky-200/80">{item.issuer}</p>
                     <p className="mt-2 text-sm text-slate-400">{item.date} | Credential ID: {item.credentialId}</p>
                     <a href={item.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex text-sm text-sky-200 transition hover:text-white">
                       Verify certificate
                     </a>
+                    </div>
                   </div>
                 ))}
               </div>

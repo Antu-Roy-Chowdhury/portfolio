@@ -46,15 +46,11 @@ export default async function ProjectPage({ params }) {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#0c1219]/90">
-            <div className="relative aspect-[4/3]">
+          <div className="overflow-hidden aspect-[3/2] rounded-[1.5rem] border border-white/10 bg-[#0c1219]/90">
+            <div className="relative aspect-[5/3]">
               <Image src={project.image} alt={project.title} fill className="object-cover" />
             </div>
-            <div className="space-y-3 p-6">
-              <div className="flex items-center justify-between gap-4 text-sm text-slate-400">
-                <span>Timeline</span>
-                <span>{project.timeline}</span>
-              </div>
+            <div className="space-y-2 p-2">
               <div className="flex items-center justify-between gap-4 text-sm text-slate-400">
                 <span>Status</span>
                 <span>{project.timeline === "Ongoing" ? "In progress" : "Completed"}</span>

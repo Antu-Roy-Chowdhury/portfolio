@@ -15,7 +15,7 @@ export default function DotPatternBackground() {
     const pointer = { x: -9999, y: -9999, active: false }
     const spacing = 18
     const dotRadius = 1
-    const influenceRadius = 140
+    const influenceRadius = 120
 
     const resize = () => {
       const ratio = window.devicePixelRatio || 1
@@ -38,19 +38,16 @@ export default function DotPatternBackground() {
           const dy = y - pointer.y
           const distance = Math.sqrt(dx * dx + dy * dy)
           const intensity = pointer.active ? Math.max(0, 1 - distance / influenceRadius) : 0
-          const glow = 0.16 + intensity * 0.84
-          const size = dotRadius + intensity * 1.4
+          const glow = 0.14 + intensity * 0.22
+          const size = dotRadius + intensity * 0.6
 
           context.beginPath()
           context.arc(x, y, size, 0, Math.PI * 2)
           context.fillStyle = `rgba(233, 244, 255, ${glow})`
-          context.shadowColor = `rgba(120, 208, 255, ${intensity * 0.85})`
-          context.shadowBlur = intensity * 18
           context.fill()
         }
       }
 
-      context.shadowBlur = 0
       window.requestAnimationFrame(draw)
     }
 

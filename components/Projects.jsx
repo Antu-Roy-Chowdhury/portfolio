@@ -148,7 +148,7 @@ export default function Projects() {
 
             <div className="p-6 space-y-4">
               <h3 className="text-xl font-bold">{project.title}</h3>
-              <p className="text-gray-400 text-sm line-clamp-3">{project.description}</p>
+              <p className="text-gray-400 text-sm line-clamp-3">{project.summary}</p>
 
               <div className="flex flex-wrap gap-2 pt-2">
                 {project.tech.slice(0, 3).map((tech, index) => (

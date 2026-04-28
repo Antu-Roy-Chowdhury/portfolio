@@ -1,10 +1,23 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
-export default function AdminTabs({ sections }) {
+export default function AdminTabs({ initialTab, sections }) {
   const firstEnabledId = useMemo(() => sections.find((section) => !section.hidden)?.id || sections[0]?.id, [sections])
-  const [activeTab, setActiveTab] = useState(firstEnabledId)
+  const [activeTab, setActiveTab] = useState(initialTab || firstEnabledId)
+  const pathname = usePathname()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  function handleTabChange(nextTab) {
+    setActiveTab(nextTab)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("tab", nextTab)
+    params.delete("status")
+    params.delete("message")
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
 
   return (
     <div className="grid gap-8 xl:grid-cols-[18rem_minmax(0,1fr)]">
@@ -19,7 +32,7 @@ export default function AdminTabs({ sections }) {
               <button
                 key={section.id}
                 type="button"
-                onClick={() => setActiveTab(section.id)}
+                onClick={() => handleTabChange(section.id)}
                 className={`block w-full rounded-2xl border px-4 py-3 text-left text-sm transition ${
                   activeTab === section.id
                     ? "border-sky-300/25 bg-sky-300/10 text-white"

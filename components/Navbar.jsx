@@ -36,11 +36,12 @@ export default function Navbar({ navigationLinks = [], siteMeta }) {
       className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? "border-b border-white/10 bg-[#070b10]/85 backdrop-blur-xl" : "bg-transparent"}`}
     >
       <div className="mx-auto flex max-w-[88rem] items-center justify-between px-5 py-4">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex items-center justify-center shadow-[0_0_40px_rgba(125,211,252,0.08)]">
-            <Image src={siteMeta.logo} alt={siteMeta.shortName} width={179} height={45} className="w-auto h-8" />
+        
+          <div className="flex items-center justify-center">
+            <Link href="/" className="flex items-center gap-3">
+            <Image src={siteMeta.logo} alt={siteMeta.shortName} width={179} height={45} className="w-auto h-8" /></Link>
           </div>
-        </Link>
+        
 
         <div className="hidden items-center gap-7 md:flex">
           {navigationLinks.map((link) => (

@@ -72,9 +72,6 @@ export default function CloudinaryImageField({
         {!cloudName || !preset ? (
           <p className="text-xs text-amber-300/80">Add Cloudinary env vars to enable direct uploads. Manual image URLs still work.</p>
         ) : null}
-        {cloudName && preset ? (
-          <p className="text-xs text-slate-500">Uses unsigned preset `{preset}` in cloud `{cloudName}` and uploads into `{folder}`.</p>
-        ) : null}
         {status ? <p className="text-xs text-slate-400">{status}</p> : null}
       </div>
     </div>

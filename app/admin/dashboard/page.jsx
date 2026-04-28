@@ -1,19 +1,24 @@
 import AdminTabs from "@/components/admin/AdminTabs"
 import CloudinaryImageField from "@/components/admin/CloudinaryImageField"
+import SocialPlatformField from "@/components/admin/SocialPlatformField"
 import {
-  deleteEducationAction,
   deleteAchievementAction,
   deleteCertificationAction,
+  deleteEducationAction,
+  deleteExperienceAction,
   deleteProjectAction,
   deleteResearchAction,
+  deleteSkillAction,
   deleteSocialLinkAction,
   logoutAction,
-  saveEducationAction,
   saveAchievementAction,
   saveCertificationAction,
+  saveEducationAction,
+  saveExperienceAction,
   saveProjectAction,
   saveResearchAction,
   saveSiteSettingsAction,
+  saveSkillAction,
   saveSocialLinkAction,
 } from "@/app/admin/actions"
 import { requireAdmin } from "@/lib/admin-auth"
@@ -49,6 +54,15 @@ function TextAreaField({ label, name, defaultValue = "", rows = 5, placeholder =
   )
 }
 
+function ActionMetaFields({ tab, id }) {
+  return (
+    <>
+      <input type="hidden" name="return_tab" value={tab} />
+      {id ? <input type="hidden" name="id" value={id} /> : null}
+    </>
+  )
+}
+
 function toDateInputValue(value) {
   if (!value) return ""
   const date = new Date(value)
@@ -56,32 +70,86 @@ function toDateInputValue(value) {
   return date.toISOString().slice(0, 10)
 }
 
-export default async function AdminDashboardPage() {
+function getTimeline(item) {
+  const start = item.start_date ? new Date(item.start_date).getFullYear() : "Start?"
+  const end = item.is_current ? "Present" : item.end_date ? new Date(item.end_date).getFullYear() : "Now"
+  return `${start} - ${end}`
+}
+
+function ManagementCard({ badge, meta, title, children, deleteAction, deleteId, tab }) {
+  return (
+    <details className="rounded-[1.7rem] border border-white/10 bg-black/10 p-5 open:bg-white/[0.04]">
+      <summary className="flex cursor-pointer list-none flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            {badge ? <span className="rounded-full border border-sky-300/20 bg-sky-300/10 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-sky-100">{badge}</span> : null}
+            {meta ? <span className="rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-slate-400">{meta}</span> : null}
+          </div>
+          <h3 className="text-xl font-semibold text-white">{title}</h3>
+        </div>
+        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">Open editor</span>
+      </summary>
+
+      <div className="mt-6 border-t border-white/10 pt-6">
+        {children}
+        {deleteAction && deleteId ? (
+          <form action={deleteAction} className="mt-5">
+            <ActionMetaFields tab={tab} id={deleteId} />
+            <button type="submit" className="text-sm text-rose-300 transition hover:text-rose-200">
+              Delete item
+            </button>
+          </form>
+        ) : null}
+      </div>
+    </details>
+  )
+}
+
+export default async function AdminDashboardPage({ searchParams }) {
   const session = await requireAdmin()
-  const { achievements, certifications, educationItems, projects, researchItems, siteSettings, socialLinks } = await getAdminDashboardData()
+  const params = await searchParams
+  const status = params?.status || ""
+  const message = params?.message || ""
+  const activeTab = params?.tab || "overview"
+  const {
+    achievements,
+    certifications,
+    educationItems,
+    experienceItems,
+    projects,
+    researchItems,
+    siteSettings,
+    skills,
+    socialLinks,
+  } = await getAdminDashboardData()
+
+  const noticeTone =
+    status === "success"
+      ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-100"
+      : status === "error"
+        ? "border-rose-300/20 bg-rose-300/10 text-rose-100"
+        : ""
 
   const adminSections = [
     {
       id: "overview",
       label: "Overview",
       content: (
-        <section className="grid gap-4 md:grid-cols-4">
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-            <p className="text-sm text-slate-400">Projects</p>
-            <p className="mt-2 text-3xl font-semibold text-white">{projects.length}</p>
-          </div>
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-            <p className="text-sm text-slate-400">Certificates</p>
-            <p className="mt-2 text-3xl font-semibold text-white">{certifications.length}</p>
-          </div>
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-            <p className="text-sm text-slate-400">Research items</p>
-            <p className="mt-2 text-3xl font-semibold text-white">{researchItems.length}</p>
-          </div>
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-            <p className="text-sm text-slate-400">Achievements</p>
-            <p className="mt-2 text-3xl font-semibold text-white">{achievements.length}</p>
-          </div>
+        <section className="space-y-6">
+          <section className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
+            {[
+              ["Projects", projects.length],
+              ["Research", researchItems.length],
+              ["Skills", skills.length],
+              ["Experience", experienceItems.length],
+              ["Social links", socialLinks.length],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                <p className="text-sm text-slate-400">{label}</p>
+                <p className="mt-2 text-3xl font-semibold text-white">{value}</p>
+              </div>
+            ))}
+          </section>
         </section>
       ),
     },
@@ -94,7 +162,7 @@ export default async function AdminDashboardPage() {
           description="These values control the public identity of the portfolio. Update your name, portrait, resume link, and dotted background colors here."
         >
           <form action={saveSiteSettingsAction} className="grid gap-5 lg:grid-cols-2">
-            <input type="hidden" name="id" defaultValue={siteSettings?.id || ""} />
+            <ActionMetaFields tab="site-settings" id={siteSettings?.id || ""} />
             <TextField label="Site title" name="site_title" defaultValue={siteSettings?.site_title || ""} required />
             <TextField label="Primary email" name="primary_email" defaultValue={siteSettings?.primary_email || ""} />
             <TextField label="Phone" name="phone" defaultValue={siteSettings?.phone || ""} />
@@ -132,9 +200,10 @@ export default async function AdminDashboardPage() {
       content: (
         <AdminSection
           title="Projects"
-          description="Create projects one by one here. Tech stack should be comma-separated. You can paste a Cloudinary image URL or upload directly if the Cloudinary env vars are set."
+          description="Create and edit projects here. Tech stack should be comma-separated. Existing items are grouped in editor cards so the list stays manageable."
         >
           <form action={saveProjectAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+            <ActionMetaFields tab="projects" />
             <TextField label="Title" name="title" required placeholder="Project title" />
             <TextField label="Slug" name="slug" required placeholder="project-slug" />
             <TextField label="Category" name="category" placeholder="Web Platform" />
@@ -168,11 +237,19 @@ export default async function AdminDashboardPage() {
             </div>
           </form>
 
-          <div className="mt-8 space-y-6">
+          <div className="mt-8 space-y-5">
             {projects.map((project) => (
-              <div key={project.id} className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5">
+              <ManagementCard
+                key={project.id}
+                badge={project.category || "Project"}
+                meta={(project.tech_stack || []).slice(0, 3).join(" • ")}
+                title={project.title}
+                deleteAction={deleteProjectAction}
+                deleteId={project.id}
+                tab="projects"
+              >
                 <form action={saveProjectAction} className="grid gap-5 lg:grid-cols-2">
-                  <input type="hidden" name="id" defaultValue={project.id} />
+                  <ActionMetaFields tab="projects" id={project.id} />
                   <TextField label="Title" name="title" defaultValue={project.title} required />
                   <TextField label="Slug" name="slug" defaultValue={project.slug} required />
                   <TextField label="Category" name="category" defaultValue={project.category || ""} />
@@ -199,19 +276,141 @@ export default async function AdminDashboardPage() {
                       Featured project
                     </label>
                   </div>
-                  <div className="flex flex-wrap gap-3 lg:col-span-2">
+                  <div className="lg:col-span-2">
                     <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
                       Save project
                     </button>
                   </div>
                 </form>
-                <form action={deleteProjectAction} className="mt-4">
-                  <input type="hidden" name="id" defaultValue={project.id} />
-                  <button type="submit" className="text-sm text-rose-300 transition hover:text-rose-200">
-                    Delete project
+              </ManagementCard>
+            ))}
+          </div>
+        </AdminSection>
+      ),
+    },
+    {
+      id: "skills",
+      label: "Skills",
+      content: (
+        <AdminSection title="Skills" description="Manage the skill page here. Category names will become grouped skill sections on the public site.">
+          <form action={saveSkillAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+            <ActionMetaFields tab="skills" />
+            <TextField label="Skill name" name="name" required placeholder="Next.js" />
+            <TextField label="Category" name="category" required placeholder="frontend or machine_learning" />
+            <TextField label="Level" name="level" type="number" defaultValue="80" />
+            <TextField label="Icon name" name="icon_name" placeholder="Optional" />
+            <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
+            <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
+              <input id="skill_featured_new" name="is_featured" type="checkbox" />
+              <label htmlFor="skill_featured_new" className="text-sm text-slate-300">Feature this skill</label>
+            </div>
+            <div className="lg:col-span-2">
+              <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                Add skill
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-8 grid gap-5 lg:grid-cols-2">
+            {skills.map((item) => (
+              <ManagementCard
+                key={item.id}
+                badge={item.category}
+                meta={`Level ${item.level || 0}`}
+                title={item.name}
+                deleteAction={deleteSkillAction}
+                deleteId={item.id}
+                tab="skills"
+              >
+                <form action={saveSkillAction} className="grid gap-5">
+                  <ActionMetaFields tab="skills" id={item.id} />
+                  <TextField label="Skill name" name="name" defaultValue={item.name} required />
+                  <TextField label="Category" name="category" defaultValue={item.category} required />
+                  <TextField label="Level" name="level" type="number" defaultValue={item.level ?? 75} />
+                  <TextField label="Icon name" name="icon_name" defaultValue={item.icon_name || ""} />
+                  <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
+                  <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
+                    <input id={`skill-featured-${item.id}`} name="is_featured" type="checkbox" defaultChecked={item.is_featured} />
+                    <label htmlFor={`skill-featured-${item.id}`} className="text-sm text-slate-300">Feature this skill</label>
+                  </div>
+                  <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                    Save skill
                   </button>
                 </form>
-              </div>
+              </ManagementCard>
+            ))}
+          </div>
+        </AdminSection>
+      ),
+    },
+    {
+      id: "experience",
+      label: "Experience Timeline",
+      content: (
+        <AdminSection title="Experience timeline" description="This section powers the About page timeline. Use one highlight per line to keep the public summary clean.">
+          <form action={saveExperienceAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+            <ActionMetaFields tab="experience" />
+            <TextField label="Title" name="title" required placeholder="Co-Founder" />
+            <TextField label="Organization" name="organization" required placeholder="Ukil Chamber" />
+            <TextField label="Employment type" name="employment_type" placeholder="Full-time, Internship" />
+            <TextField label="Location" name="location" placeholder="Rajshahi, Bangladesh" />
+            <TextField label="Start date" name="start_date" type="date" />
+            <TextField label="End date" name="end_date" type="date" />
+            <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
+            <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
+              <input id="experience_current_new" name="is_current" type="checkbox" />
+              <label htmlFor="experience_current_new" className="text-sm text-slate-300">Current role</label>
+            </div>
+            <div className="lg:col-span-2">
+              <TextAreaField label="Description" name="description" rows={4} />
+            </div>
+            <div className="lg:col-span-2">
+              <TextAreaField label="Highlights" name="highlights" rows={4} placeholder={"One achievement per line"} />
+            </div>
+            <div className="lg:col-span-2">
+              <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                Add experience
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-8 space-y-5">
+            {experienceItems.map((item) => (
+              <ManagementCard
+                key={item.id}
+                badge={item.employment_type || "Experience"}
+                meta={getTimeline(item)}
+                title={`${item.title} · ${item.organization}`}
+                deleteAction={deleteExperienceAction}
+                deleteId={item.id}
+                tab="experience"
+              >
+                <form action={saveExperienceAction} className="grid gap-5 lg:grid-cols-2">
+                  <ActionMetaFields tab="experience" id={item.id} />
+                  <TextField label="Title" name="title" defaultValue={item.title} required />
+                  <TextField label="Organization" name="organization" defaultValue={item.organization} required />
+                  <TextField label="Employment type" name="employment_type" defaultValue={item.employment_type || ""} />
+                  <TextField label="Location" name="location" defaultValue={item.location || ""} />
+                  <TextField label="Start date" name="start_date" type="date" defaultValue={toDateInputValue(item.start_date)} />
+                  <TextField label="End date" name="end_date" type="date" defaultValue={toDateInputValue(item.end_date)} />
+                  <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
+                  <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
+                    <input id={`experience-current-${item.id}`} name="is_current" type="checkbox" defaultChecked={item.is_current} />
+                    <label htmlFor={`experience-current-${item.id}`} className="text-sm text-slate-300">Current role</label>
+                  </div>
+                  <div className="lg:col-span-2">
+                    <TextAreaField label="Description" name="description" defaultValue={item.description || ""} rows={4} />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <TextAreaField label="Highlights" name="highlights" defaultValue={(item.highlights || []).join("\n")} rows={4} />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                      Save experience
+                    </button>
+                  </div>
+                </form>
+              </ManagementCard>
             ))}
           </div>
         </AdminSection>
@@ -221,8 +420,9 @@ export default async function AdminDashboardPage() {
       id: "certifications",
       label: "Certifications",
       content: (
-        <AdminSection title="Certifications" description="Store certificate details and optional image URLs for later gallery-style presentation.">
+        <AdminSection title="Certifications" description="Store certificate details and optional image URLs for visual presentation on the public site.">
           <form action={saveCertificationAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5">
+            <ActionMetaFields tab="certifications" />
             <TextField label="Title" name="title" required />
             <TextField label="Issuer" name="issuer" required />
             <TextField label="Issue date" name="issue_date" type="date" />
@@ -241,9 +441,17 @@ export default async function AdminDashboardPage() {
 
           <div className="mt-8 space-y-5">
             {certifications.map((item) => (
-              <div key={item.id} className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5">
+              <ManagementCard
+                key={item.id}
+                badge={item.issuer}
+                meta={item.issue_date ? new Date(item.issue_date).getFullYear() : ""}
+                title={item.title}
+                deleteAction={deleteCertificationAction}
+                deleteId={item.id}
+                tab="certifications"
+              >
                 <form action={saveCertificationAction} className="grid gap-5">
-                  <input type="hidden" name="id" defaultValue={item.id} />
+                  <ActionMetaFields tab="certifications" id={item.id} />
                   <TextField label="Title" name="title" defaultValue={item.title} required />
                   <TextField label="Issuer" name="issuer" defaultValue={item.issuer} required />
                   <TextField label="Issue date" name="issue_date" type="date" defaultValue={toDateInputValue(item.issue_date)} />
@@ -259,13 +467,7 @@ export default async function AdminDashboardPage() {
                     Save certification
                   </button>
                 </form>
-                <form action={deleteCertificationAction} className="mt-4">
-                  <input type="hidden" name="id" defaultValue={item.id} />
-                  <button type="submit" className="text-sm text-rose-300 transition hover:text-rose-200">
-                    Delete certification
-                  </button>
-                </form>
-              </div>
+              </ManagementCard>
             ))}
           </div>
         </AdminSection>
@@ -275,8 +477,9 @@ export default async function AdminDashboardPage() {
       id: "education",
       label: "Education",
       content: (
-        <AdminSection title="Education" description="Keep academic details editable here, including future degree updates, CGPA, and descriptions.">
+        <AdminSection title="Education" description="Keep academic details editable here, including degree updates, CGPA, and descriptions.">
           <form action={saveEducationAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+            <ActionMetaFields tab="education" />
             <TextField label="Degree" name="degree" required />
             <TextField label="Institution" name="institution" required />
             <TextField label="Field of study" name="field_of_study" />
@@ -300,9 +503,17 @@ export default async function AdminDashboardPage() {
 
           <div className="mt-8 space-y-5">
             {educationItems.map((item) => (
-              <div key={item.id} className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5">
+              <ManagementCard
+                key={item.id}
+                badge={item.field_of_study || "Education"}
+                meta={`${item.start_year || ""}${item.start_year || item.end_year ? " - " : ""}${item.is_current ? "Present" : item.end_year || ""}`}
+                title={`${item.degree} · ${item.institution}`}
+                deleteAction={deleteEducationAction}
+                deleteId={item.id}
+                tab="education"
+              >
                 <form action={saveEducationAction} className="grid gap-5 lg:grid-cols-2">
-                  <input type="hidden" name="id" defaultValue={item.id} />
+                  <ActionMetaFields tab="education" id={item.id} />
                   <TextField label="Degree" name="degree" defaultValue={item.degree} required />
                   <TextField label="Institution" name="institution" defaultValue={item.institution} required />
                   <TextField label="Field of study" name="field_of_study" defaultValue={item.field_of_study || ""} />
@@ -323,13 +534,7 @@ export default async function AdminDashboardPage() {
                     </button>
                   </div>
                 </form>
-                <form action={deleteEducationAction} className="mt-4">
-                  <input type="hidden" name="id" defaultValue={item.id} />
-                  <button type="submit" className="text-sm text-rose-300 transition hover:text-rose-200">
-                    Delete education
-                  </button>
-                </form>
-              </div>
+              </ManagementCard>
             ))}
           </div>
         </AdminSection>
@@ -341,7 +546,8 @@ export default async function AdminDashboardPage() {
       content: (
         <AdminSection title="Research items" description="Manage published papers and ongoing research. Tags should be comma-separated.">
           <form action={saveResearchAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5">
-            <TextField label="Item type" name="item_type" defaultValue="research" />
+            <ActionMetaFields tab="research" />
+            <TextField label="Item type" name="item_type" defaultValue="conference" />
             <TextField label="Title" name="title" required />
             <TextField label="Venue or journal" name="event_or_journal" />
             <TextField label="Publication date" name="publication_date" type="date" />
@@ -363,9 +569,17 @@ export default async function AdminDashboardPage() {
 
           <div className="mt-8 space-y-5">
             {researchItems.map((item) => (
-              <div key={item.id} className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5">
+              <ManagementCard
+                key={item.id}
+                badge={item.item_type || "Research"}
+                meta={item.publication_date ? new Date(item.publication_date).getFullYear() : item.status}
+                title={item.title}
+                deleteAction={deleteResearchAction}
+                deleteId={item.id}
+                tab="research"
+              >
                 <form action={saveResearchAction} className="grid gap-5">
-                  <input type="hidden" name="id" defaultValue={item.id} />
+                  <ActionMetaFields tab="research" id={item.id} />
                   <TextField label="Item type" name="item_type" defaultValue={item.item_type || "research"} />
                   <TextField label="Title" name="title" defaultValue={item.title} required />
                   <TextField label="Venue or journal" name="event_or_journal" defaultValue={item.event_or_journal || ""} />
@@ -385,13 +599,7 @@ export default async function AdminDashboardPage() {
                     Save research item
                   </button>
                 </form>
-                <form action={deleteResearchAction} className="mt-4">
-                  <input type="hidden" name="id" defaultValue={item.id} />
-                  <button type="submit" className="text-sm text-rose-300 transition hover:text-rose-200">
-                    Delete research item
-                  </button>
-                </form>
-              </div>
+              </ManagementCard>
             ))}
           </div>
         </AdminSection>
@@ -401,12 +609,15 @@ export default async function AdminDashboardPage() {
       id: "socials",
       label: "Social Links",
       content: (
-        <AdminSection title="Social links" description="Manage your complete social tree here, including Facebook, Instagram, LinkedIn, Google Scholar, ResearchGate, X, Codeforces, Reddit, and more.">
+        <AdminSection title="Social links" description="Manage the social tree here. Choose a platform button so the matching icon stays consistent across the site.">
           <form action={saveSocialLinkAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
-            <TextField label="Platform" name="platform" required placeholder="facebook" />
+            <ActionMetaFields tab="socials" />
+            <div className="lg:col-span-2">
+              <SocialPlatformField />
+            </div>
             <TextField label="Label" name="label" placeholder="Facebook" />
             <TextField label="URL" name="url" required placeholder="https://..." />
-            <TextField label="Icon name" name="icon_name" placeholder="Optional" />
+            <TextField label="Icon name" name="icon_name" placeholder="Optional override" />
             <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
             <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
               <input id="social_visible_new" name="is_visible" type="checkbox" defaultChecked />
@@ -421,10 +632,18 @@ export default async function AdminDashboardPage() {
 
           <div className="mt-8 grid gap-5 lg:grid-cols-2">
             {socialLinks.map((item) => (
-              <div key={item.id} className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5">
+              <ManagementCard
+                key={item.id}
+                badge={item.platform}
+                meta={item.is_visible ? "Visible" : "Hidden"}
+                title={item.label || item.platform}
+                deleteAction={deleteSocialLinkAction}
+                deleteId={item.id}
+                tab="socials"
+              >
                 <form action={saveSocialLinkAction} className="grid gap-5">
-                  <input type="hidden" name="id" defaultValue={item.id} />
-                  <TextField label="Platform" name="platform" defaultValue={item.platform} required />
+                  <ActionMetaFields tab="socials" id={item.id} />
+                  <SocialPlatformField defaultValue={item.platform} />
                   <TextField label="Label" name="label" defaultValue={item.label || ""} />
                   <TextField label="URL" name="url" defaultValue={item.url} required />
                   <TextField label="Icon name" name="icon_name" defaultValue={item.icon_name || ""} />
@@ -437,13 +656,7 @@ export default async function AdminDashboardPage() {
                     Save social link
                   </button>
                 </form>
-                <form action={deleteSocialLinkAction} className="mt-4">
-                  <input type="hidden" name="id" defaultValue={item.id} />
-                  <button type="submit" className="text-sm text-rose-300 transition hover:text-rose-200">
-                    Delete social link
-                  </button>
-                </form>
-              </div>
+              </ManagementCard>
             ))}
           </div>
         </AdminSection>
@@ -455,6 +668,7 @@ export default async function AdminDashboardPage() {
       content: (
         <AdminSection title="Achievements" description="Use this for contests, awards, leadership milestones, and recognitions.">
           <form action={saveAchievementAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+            <ActionMetaFields tab="achievements" />
             <TextField label="Title" name="title" required />
             <TextField label="Issuer or context" name="issuer" />
             <TextField label="Achievement date" name="achievement_date" type="date" />
@@ -477,9 +691,17 @@ export default async function AdminDashboardPage() {
 
           <div className="mt-8 grid gap-5 lg:grid-cols-2">
             {achievements.map((item) => (
-              <div key={item.id} className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5">
+              <ManagementCard
+                key={item.id}
+                badge={(item.tags || []).slice(0, 2).join(" • ")}
+                meta={item.achievement_date ? new Date(item.achievement_date).getFullYear() : item.issuer}
+                title={item.title}
+                deleteAction={deleteAchievementAction}
+                deleteId={item.id}
+                tab="achievements"
+              >
                 <form action={saveAchievementAction} className="grid gap-5">
-                  <input type="hidden" name="id" defaultValue={item.id} />
+                  <ActionMetaFields tab="achievements" id={item.id} />
                   <TextField label="Title" name="title" defaultValue={item.title} required />
                   <TextField label="Issuer or context" name="issuer" defaultValue={item.issuer || ""} />
                   <TextField label="Achievement date" name="achievement_date" type="date" defaultValue={toDateInputValue(item.achievement_date)} />
@@ -495,13 +717,7 @@ export default async function AdminDashboardPage() {
                     Save achievement
                   </button>
                 </form>
-                <form action={deleteAchievementAction} className="mt-4">
-                  <input type="hidden" name="id" defaultValue={item.id} />
-                  <button type="submit" className="text-sm text-rose-300 transition hover:text-rose-200">
-                    Delete achievement
-                  </button>
-                </form>
-              </div>
+              </ManagementCard>
             ))}
           </div>
         </AdminSection>
@@ -524,7 +740,8 @@ export default async function AdminDashboardPage() {
             </button>
           </form>
         </div>
-        <AdminTabs sections={adminSections} />
+        {message ? <div className={`rounded-[1.5rem] border px-5 py-4 text-sm ${noticeTone}`}>{message}</div> : null}
+        <AdminTabs initialTab={activeTab} sections={adminSections} />
       </div>
     </main>
   )
