@@ -1,6 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import PageHeroGraphic from "@/components/PageHeroGraphic"
+import ResearchCards from "@/components/research/ResearchCards"
 import SiteShell from "@/components/SiteShell"
 import { getAchievementItems, getResearchItems } from "@/lib/portfolio-content"
 
@@ -10,7 +11,7 @@ function FilterLink({ active, href, label }) {
       href={href}
       className={`rounded-full border px-4 py-2 text-sm transition ${
         active
-          ? "border-sky-300/30 bg-sky-300/10 text-sky-100"
+          ? "border-[#7dd3fc]/55 bg-[rgba(125,211,252,0.18)] text-white shadow-[0_0_0_1px_rgba(125,211,252,0.28),0_0_26px_rgba(125,211,252,0.22)]"
           : "border-white/10 bg-transparent text-slate-300 hover:border-sky-300/25 hover:text-white"
       }`}
     >
@@ -93,44 +94,7 @@ export default async function ResearchPage({ searchParams }) {
             </div>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-2">
-            {filteredResearch.map((item) => (
-              <article key={`${item.title}-${item.venue}`} className="overflow-hidden rounded-[1.8rem] border border-white/10 bg-[#09111a]/92">
-                <div className="flex items-center gap-2 border-b border-white/10 bg-white/5 px-5 py-3">
-                  <span className="h-2.5 w-2.5 rounded-full bg-rose-300/80" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-300/80" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-300/80" />
-                </div>
-                {item.image ? (
-                  <div className="relative h-52 overflow-hidden border-b border-white/10">
-                    <Image src={item.image} alt={item.title} fill className="object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#09111a] via-transparent to-transparent" />
-                  </div>
-                ) : null}
-                <div className="p-6">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <p className="text-xs uppercase tracking-[0.24em] text-sky-200/70">{item.venue}</p>
-                    {item.year ? <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">{item.year}</span> : null}
-                    {item.kind ? <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">{item.kind}</span> : null}
-                  </div>
-                  <h2 className="mt-3 text-2xl font-semibold text-white">{item.title}</h2>
-                  <p className="mt-4 panel-copy">{item.summary}</p>
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {item.tags.map((tag) => (
-                      <span key={tag} className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  {item.url && item.url !== "#" ? (
-                    <a href={item.url} target="_blank" rel="noreferrer" className="mt-6 inline-flex text-sm text-sky-200 transition hover:text-white">
-                      Open publication
-                    </a>
-                  ) : null}
-                </div>
-              </article>
-            ))}
-          </div>
+          <ResearchCards items={filteredResearch} />
           {!filteredResearch.length ? (
             <div className="panel">
               <h2 className="panel-title">No matching research items</h2>

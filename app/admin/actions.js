@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { isRedirectError } from "next/dist/client/components/redirect-error"
 import {
   clearAdminSession,
   createAdminSession,
@@ -23,6 +24,13 @@ function normalizeOptional(value) {
 function normalizeNumber(value, fallback = 0) {
   const number = Number(value)
   return Number.isFinite(number) ? number : fallback
+}
+
+function normalizeToken(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
 }
 
 function normalizeYear(value) {
@@ -113,6 +121,12 @@ function revalidatePortfolioPaths(...extraPaths) {
   const basePaths = ["/", "/about", "/projects", "/skills", "/research", "/contact", getAdminDashboardPath()]
   for (const path of [...basePaths, ...extraPaths]) {
     revalidatePath(path)
+  }
+}
+
+function rethrowRedirect(error) {
+  if (isRedirectError(error)) {
+    throw error
   }
 }
 
@@ -211,8 +225,101 @@ export async function saveSiteSettingsAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", "Site settings saved.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to save site settings.")
+  }
+}
+
+export async function saveHomeSectionAction(formData) {
+  const sql = getSql()
+  const tab = getReturnTab(formData, "home-sections")
+
+  if (!sql) {
+    redirectToDashboard(tab, "error", "Database connection is missing.")
+  }
+
+  try {
+    const id = normalizeOptional(formData.get("id"))
+    const payload = {
+      sectionKey: normalizeToken(formData.get("section_key")),
+      title: normalizeOptional(formData.get("title")),
+      subtitle: normalizeOptional(formData.get("subtitle")),
+      description: normalizeOptional(formData.get("description")),
+      badge: normalizeOptional(formData.get("badge")),
+      primaryButtonLabel: normalizeOptional(formData.get("primary_button_label")),
+      primaryButtonUrl: normalizeOptional(formData.get("primary_button_url")),
+      secondaryButtonLabel: normalizeOptional(formData.get("secondary_button_label")),
+      secondaryButtonUrl: normalizeOptional(formData.get("secondary_button_url")),
+      imageUrl: normalizeOptional(formData.get("image_url")),
+      isActive: normalizeCheckbox(formData.get("is_active")),
+      sortOrder: normalizeNumber(formData.get("sort_order")),
+    }
+
+    if (!payload.sectionKey) {
+      redirectToDashboard(tab, "error", "Section key is required.")
+    }
+
+    if (id) {
+      await sql`
+        update home_sections
+        set
+          section_key = ${payload.sectionKey},
+          title = ${payload.title},
+          subtitle = ${payload.subtitle},
+          description = ${payload.description},
+          badge = ${payload.badge},
+          primary_button_label = ${payload.primaryButtonLabel},
+          primary_button_url = ${payload.primaryButtonUrl},
+          secondary_button_label = ${payload.secondaryButtonLabel},
+          secondary_button_url = ${payload.secondaryButtonUrl},
+          image_url = ${payload.imageUrl},
+          is_active = ${payload.isActive},
+          sort_order = ${payload.sortOrder},
+          updated_at = now()
+        where id = ${id}
+      `
+    } else {
+      await sql`
+        insert into home_sections (
+          section_key, title, subtitle, description, badge, primary_button_label,
+          primary_button_url, secondary_button_label, secondary_button_url, image_url,
+          is_active, sort_order
+        ) values (
+          ${payload.sectionKey}, ${payload.title}, ${payload.subtitle}, ${payload.description},
+          ${payload.badge}, ${payload.primaryButtonLabel}, ${payload.primaryButtonUrl},
+          ${payload.secondaryButtonLabel}, ${payload.secondaryButtonUrl}, ${payload.imageUrl},
+          ${payload.isActive}, ${payload.sortOrder}
+        )
+      `
+    }
+
+    revalidatePortfolioPaths()
+    redirectToDashboard(tab, "success", id ? "Home section updated." : "Home section added.")
+  } catch (error) {
+    rethrowRedirect(error)
+    console.error(error)
+    redirectToDashboard(tab, "error", "Failed to save home section.")
+  }
+}
+
+export async function deleteHomeSectionAction(formData) {
+  const sql = getSql()
+  const tab = getReturnTab(formData, "home-sections")
+  const id = normalizeOptional(formData.get("id"))
+
+  if (!sql || !id) {
+    redirectToDashboard(tab, "error", "Home section deletion failed.")
+  }
+
+  try {
+    await sql`delete from home_sections where id = ${id}`
+    revalidatePortfolioPaths()
+    redirectToDashboard(tab, "success", "Home section deleted.")
+  } catch (error) {
+    rethrowRedirect(error)
+    console.error(error)
+    redirectToDashboard(tab, "error", "Failed to delete home section.")
   }
 }
 
@@ -285,6 +392,7 @@ export async function saveProjectAction(formData) {
     revalidatePortfolioPaths(`/projects/${payload.slug}`)
     redirectToDashboard(tab, "success", id ? "Project updated." : "Project added.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to save project.")
   }
@@ -304,6 +412,7 @@ export async function deleteProjectAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", "Project deleted.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to delete project.")
   }
@@ -362,6 +471,7 @@ export async function saveCertificationAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", id ? "Certification updated." : "Certification added.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to save certification.")
   }
@@ -381,6 +491,7 @@ export async function deleteCertificationAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", "Certification deleted.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to delete certification.")
   }
@@ -404,6 +515,8 @@ export async function saveEducationAction(formData) {
       endYear: normalizeYear(formData.get("end_year")),
       isCurrent: normalizeCheckbox(formData.get("is_current")),
       result: normalizeOptional(formData.get("result")),
+      coreFocus: normalizeOptional(formData.get("core_focus")),
+      imageUrl: normalizeOptional(formData.get("image_url")),
       description: normalizeOptional(formData.get("description")),
       sortOrder: normalizeNumber(formData.get("sort_order")),
     }
@@ -423,6 +536,8 @@ export async function saveEducationAction(formData) {
           end_year = ${payload.endYear},
           is_current = ${payload.isCurrent},
           result = ${payload.result},
+          core_focus = ${payload.coreFocus},
+          image_url = ${payload.imageUrl},
           description = ${payload.description},
           sort_order = ${payload.sortOrder}
         where id = ${id}
@@ -430,10 +545,10 @@ export async function saveEducationAction(formData) {
     } else {
       await sql`
         insert into education (
-          degree, institution, field_of_study, start_year, end_year, is_current, result, description, sort_order
+          degree, institution, field_of_study, start_year, end_year, is_current, result, core_focus, image_url, description, sort_order
         ) values (
           ${payload.degree}, ${payload.institution}, ${payload.fieldOfStudy}, ${payload.startYear}, ${payload.endYear},
-          ${payload.isCurrent}, ${payload.result}, ${payload.description}, ${payload.sortOrder}
+          ${payload.isCurrent}, ${payload.result}, ${payload.coreFocus}, ${payload.imageUrl}, ${payload.description}, ${payload.sortOrder}
         )
       `
     }
@@ -441,6 +556,7 @@ export async function saveEducationAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", id ? "Education updated." : "Education added.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to save education.")
   }
@@ -460,6 +576,7 @@ export async function deleteEducationAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", "Education deleted.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to delete education.")
   }
@@ -475,13 +592,18 @@ export async function saveSkillAction(formData) {
 
   try {
     const id = normalizeOptional(formData.get("id"))
+    const categoryCustom = normalizeToken(formData.get("category_custom"))
+    const categoryPreset = normalizeToken(formData.get("category_preset"))
     const payload = {
       name: String(formData.get("name") || "").trim(),
-      category: String(formData.get("category") || "").trim().toLowerCase().replace(/\s+/g, "_"),
-      level: normalizeNumber(formData.get("level"), 75),
-      iconName: normalizeOptional(formData.get("icon_name")),
+      category: categoryCustom || categoryPreset || normalizeToken(formData.get("category")),
+      proficiencyBucket: normalizeOptional(formData.get("proficiency_bucket")) || "core",
       isFeatured: normalizeCheckbox(formData.get("is_featured")),
       sortOrder: normalizeNumber(formData.get("sort_order")),
+      appliedInProjects: formData
+        .getAll("applied_in_projects")
+        .map((item) => String(item || "").trim())
+        .filter(Boolean),
     }
 
     if (!payload.name || !payload.category) {
@@ -494,22 +616,23 @@ export async function saveSkillAction(formData) {
         set
           name = ${payload.name},
           category = ${payload.category},
-          level = ${payload.level},
-          icon_name = ${payload.iconName},
+          proficiency_bucket = ${payload.proficiencyBucket},
           is_featured = ${payload.isFeatured},
-          sort_order = ${payload.sortOrder}
+          sort_order = ${payload.sortOrder},
+          applied_in_projects = ${payload.appliedInProjects}
         where id = ${id}
       `
     } else {
       await sql`
-        insert into skills (name, category, level, icon_name, is_featured, sort_order)
-        values (${payload.name}, ${payload.category}, ${payload.level}, ${payload.iconName}, ${payload.isFeatured}, ${payload.sortOrder})
+        insert into skills (name, category, proficiency_bucket, is_featured, sort_order, applied_in_projects)
+        values (${payload.name}, ${payload.category}, ${payload.proficiencyBucket}, ${payload.isFeatured}, ${payload.sortOrder}, ${payload.appliedInProjects})
       `
     }
 
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", id ? "Skill updated." : "Skill added.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to save skill.")
   }
@@ -529,6 +652,7 @@ export async function deleteSkillAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", "Skill deleted.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to delete skill.")
   }
@@ -595,6 +719,7 @@ export async function saveExperienceAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", id ? "Experience updated." : "Experience added.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to save experience.")
   }
@@ -614,6 +739,7 @@ export async function deleteExperienceAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", "Experience deleted.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to delete experience.")
   }
@@ -635,9 +761,11 @@ export async function saveResearchAction(formData) {
       shortDescription: normalizeOptional(formData.get("short_description")),
       abstract: normalizeOptional(formData.get("abstract")),
       eventOrJournal: normalizeOptional(formData.get("event_or_journal")),
+      authors: normalizeOptional(formData.get("authors")),
       publicationDate: normalizeOptional(formData.get("publication_date")),
       status: normalizeOptional(formData.get("status")) || "in_progress",
       paperUrl: normalizeOptional(formData.get("paper_url")),
+      codeUrl: normalizeOptional(formData.get("code_url")),
       imageUrl: normalizeOptional(formData.get("image_url")),
       featured: normalizeCheckbox(formData.get("featured")),
       sortOrder: normalizeNumber(formData.get("sort_order")),
@@ -658,9 +786,11 @@ export async function saveResearchAction(formData) {
           short_description = ${payload.shortDescription},
           abstract = ${payload.abstract},
           event_or_journal = ${payload.eventOrJournal},
+          authors = ${payload.authors},
           publication_date = ${payload.publicationDate},
           status = ${payload.status},
           paper_url = ${payload.paperUrl},
+          code_url = ${payload.codeUrl},
           image_url = ${payload.imageUrl},
           featured = ${payload.featured},
           sort_order = ${payload.sortOrder},
@@ -670,12 +800,12 @@ export async function saveResearchAction(formData) {
     } else {
       const inserted = await sql`
         insert into research_items (
-          item_type, title, short_description, abstract, event_or_journal, publication_date,
-          status, paper_url, image_url, featured, sort_order
+          item_type, title, short_description, abstract, event_or_journal, authors, publication_date,
+          status, paper_url, code_url, image_url, featured, sort_order
         ) values (
           ${payload.itemType}, ${payload.title}, ${payload.shortDescription}, ${payload.abstract},
-          ${payload.eventOrJournal}, ${payload.publicationDate}, ${payload.status},
-          ${payload.paperUrl}, ${payload.imageUrl}, ${payload.featured}, ${payload.sortOrder}
+          ${payload.eventOrJournal}, ${payload.authors}, ${payload.publicationDate}, ${payload.status},
+          ${payload.paperUrl}, ${payload.codeUrl}, ${payload.imageUrl}, ${payload.featured}, ${payload.sortOrder}
         )
         returning id
       `
@@ -686,6 +816,7 @@ export async function saveResearchAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", id ? "Research item updated." : "Research item added.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to save research item.")
   }
@@ -705,6 +836,7 @@ export async function deleteResearchAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", "Research item deleted.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to delete research item.")
   }
@@ -756,6 +888,7 @@ export async function saveSocialLinkAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", id ? "Social link updated." : "Social link added.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to save social link.")
   }
@@ -775,6 +908,7 @@ export async function deleteSocialLinkAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", "Social link deleted.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to delete social link.")
   }
@@ -836,6 +970,7 @@ export async function saveAchievementAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", id ? "Achievement updated." : "Achievement added.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to save achievement.")
   }
@@ -855,6 +990,7 @@ export async function deleteAchievementAction(formData) {
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", "Achievement deleted.")
   } catch (error) {
+    rethrowRedirect(error)
     console.error(error)
     redirectToDashboard(tab, "error", "Failed to delete achievement.")
   }

@@ -5,9 +5,26 @@ import { getHomeContent } from "@/lib/portfolio-content"
 
 export default async function Home() {
   const { experiences, featuredProjects, hero, highlightStats, siteMeta, skillGroups, strengths } = await getHomeContent()
+  const personSchema = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: siteMeta.name,
+    url: process.env.NEXT_PUBLIC_SITE_URL || "https://anturoychowdhury.vercel.app",
+    image: siteMeta.portrait,
+    jobTitle: "Research-oriented software developer",
+    alumniOf: "Rajshahi University of Engineering and Technology",
+    email: siteMeta.email,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Rajshahi",
+      addressCountry: "Bangladesh",
+    },
+    sameAs: siteMeta.socialLinks?.map((item) => item.href).filter(Boolean),
+  }
 
   return (
     <SiteShell>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }} />
       <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-[88rem] items-center px-5 pb-16 pt-10">
         <div className="grid w-full gap-12 lg:grid-cols-[1.25fr_0.75fr] lg:items-center xl:gap-20">
           <div className="order-2 space-y-8 lg:order-1">
@@ -133,13 +150,23 @@ export default async function Home() {
         <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
           <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8">
             <p className="section-kicker">Experience</p>
-            <div className="mt-8 space-y-6">
+            <div className="mt-8 space-y-0">
               {experiences.map((item) => (
-                <div key={`${item.year}-${item.title}`} className="border-l border-white/10 pl-5">
-                  <p className="text-xs uppercase tracking-[0.24em] text-sky-200/70">{item.year}</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">{item.title}</h3>
-                  <p className="mt-1 text-sm text-slate-300">{item.org}</p>
-                  <p className="mt-3 text-sm leading-7 text-slate-400">{item.text}</p>
+                <div
+                  key={`${item.year}-${item.title}`}
+                  className="relative pl-9 before:absolute before:left-[0.6rem] before:top-0 before:h-full before:w-px before:bg-white/10 last:before:h-10"
+                >
+                  <span
+                    className={`absolute left-0 top-1.5 h-5 w-5 rounded-full border-2 border-sky-300 ${
+                      item.isCurrent ? "bg-transparent" : "bg-sky-300"
+                    }`}
+                  />
+                  <div className="pb-8 last:pb-0">
+                    <p className="text-xs uppercase tracking-[0.24em] text-sky-200/70">{item.year}</p>
+                    <h3 className="mt-2 text-xl font-semibold text-white">{item.title}</h3>
+                    <p className="mt-1 text-sm text-slate-300">{item.org}</p>
+                    <p className="mt-3 text-sm leading-7 text-slate-400">{item.text}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -149,13 +176,13 @@ export default async function Home() {
             <p className="section-kicker">Skills Snapshot</p>
             <div className="mt-8 grid gap-5 sm:grid-cols-2">
               {skillGroups.map((group) => (
-                <div key={group.title} className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5">
+                <div key={group.key || group.title} className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5">
                   <h3 className="text-lg font-semibold text-white">{group.title}</h3>
                   <p className="mt-2 text-sm leading-6 text-slate-400">{group.description}</p>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {group.items.slice(0, 4).map((item) => (
-                      <span key={item} className="rounded-full bg-white/5 px-3 py-1 text-xs text-slate-300">
-                        {item}
+                    {[...(group.core || []), ...(group.familiar || [])].slice(0, 4).map((item) => (
+                      <span key={item.id || item.name} className="rounded-full bg-white/5 px-3 py-1 text-xs text-slate-300">
+                        {item.name}
                       </span>
                     ))}
                   </div>

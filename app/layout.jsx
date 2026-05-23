@@ -11,16 +11,72 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-display",
 })
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://anturoychowdhury.vercel.app"
 
 export const metadata = {
+  metadataBase: new URL(siteUrl),
   icons: {
     icon: "/favicon.png",
     shortcut: "/favicon.png",
     apple: "/favicon.png",
   },
-  title: "Antu Roy Chowdhury",
-  description: "Portfolio website of Antu Roy Chowdhury - Developer, Designer, Engineer",
-    generator: 'Antu'
+  title: {
+    default: "Antu Roy Chowdhury | Research-Oriented Software Portfolio",
+    template: "%s | Antu Roy Chowdhury",
+  },
+  description:
+    "Electronics & Telecommunication Engineering student at RUET specializing in practical machine learning, image processing, and full-stack prototyping.",
+  keywords: [
+    "Antu Roy Chowdhury",
+    "RUET",
+    "machine learning",
+    "computer vision",
+    "healthcare AI",
+    "embedded systems",
+    "full-stack developer",
+    "research portfolio",
+  ],
+  authors: [{ name: "Antu Roy Chowdhury", url: siteUrl }],
+  creator: "Antu Roy Chowdhury",
+  publisher: "Antu Roy Chowdhury",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: siteUrl,
+    title: "Antu Roy Chowdhury | Research-Oriented Software Portfolio",
+    description:
+      "Bridging the gap between engineering research and intelligent software through practical ML, image processing, and full-stack prototyping.",
+    siteName: "Antu Roy Chowdhury Portfolio",
+    images: [
+      {
+        url: "/potraint.png",
+        width: 1200,
+        height: 1200,
+        alt: "Portrait of Antu Roy Chowdhury",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Antu Roy Chowdhury | Research-Oriented Software Portfolio",
+    description:
+      "Electronics & Telecommunication Engineering student at RUET building ML, computer vision, and full-stack systems with research depth.",
+    images: ["/potraint.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  generator: "Antu",
 }
 
 export default function RootLayout({ children }) {

@@ -20,6 +20,15 @@ export default async function ContactPage() {
               <p>Location: {siteMeta.location}</p>
             </div>
 
+            <a
+              href={siteMeta.resumeUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-6 inline-flex rounded-full border border-sky-300/30 bg-sky-300/10 px-5 py-3 text-sm font-medium text-sky-100 transition hover:bg-sky-300/15 hover:text-white"
+            >
+              Download CV / Resume
+            </a>
+
             <div className="mt-8">
               <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Social tree</p>
               <div className="mt-4 flex flex-wrap gap-3">

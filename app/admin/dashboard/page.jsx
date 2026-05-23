@@ -6,6 +6,7 @@ import {
   deleteCertificationAction,
   deleteEducationAction,
   deleteExperienceAction,
+  deleteHomeSectionAction,
   deleteProjectAction,
   deleteResearchAction,
   deleteSkillAction,
@@ -15,6 +16,7 @@ import {
   saveCertificationAction,
   saveEducationAction,
   saveExperienceAction,
+  saveHomeSectionAction,
   saveProjectAction,
   saveResearchAction,
   saveSiteSettingsAction,
@@ -23,6 +25,7 @@ import {
 } from "@/app/admin/actions"
 import { requireAdmin } from "@/lib/admin-auth"
 import { getAdminDashboardData } from "@/lib/admin-data"
+import { getSkillCategoryLabel, SKILL_CATEGORY_OPTIONS, SKILL_PROFICIENCY_OPTIONS } from "@/lib/skill-config"
 
 function AdminSection({ title, description, children }) {
   return (
@@ -50,6 +53,74 @@ function TextAreaField({ label, name, defaultValue = "", rows = 5, placeholder =
     <div className="space-y-2">
       <label className="block text-sm text-slate-300">{label}</label>
       <textarea name={name} defaultValue={defaultValue} rows={rows} placeholder={placeholder} className="form-input min-h-28" />
+    </div>
+  )
+}
+
+function SelectField({ label, name, defaultValue = "", options = [] }) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm text-slate-300">{label}</label>
+      <select name={name} defaultValue={defaultValue} className="form-input">
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
+function MultiSelectField({ label, name, defaultValue = [], options = [], helperText = "" }) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm text-slate-300">{label}</label>
+      <select name={name} multiple defaultValue={defaultValue} className="form-input min-h-40">
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {helperText ? <p className="text-xs text-slate-500">{helperText}</p> : null}
+    </div>
+  )
+}
+
+function SkillCategoryFields({ defaultCategory = "" }) {
+  const categoryIsPreset = SKILL_CATEGORY_OPTIONS.some((item) => item.value === defaultCategory)
+
+  return (
+    <>
+      <SelectField
+        label="Category preset"
+        name="category_preset"
+        defaultValue={categoryIsPreset ? defaultCategory : ""}
+        options={[{ value: "", label: "Select a structured category" }, ...SKILL_CATEGORY_OPTIONS]}
+      />
+      <TextField
+        label="Or create new category"
+        name="category_custom"
+        defaultValue={categoryIsPreset ? "" : defaultCategory}
+        placeholder="robotics_research"
+      />
+    </>
+  )
+}
+
+function SkillProficiencyField({ defaultValue = "core" }) {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-slate-300">Proficiency bucket</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {SKILL_PROFICIENCY_OPTIONS.map((option) => (
+          <label key={option.value} className="flex cursor-pointer items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+            <input type="radio" name="proficiency_bucket" value={option.value} defaultChecked={defaultValue === option.value} />
+            <span>{option.label}</span>
+          </label>
+        ))}
+      </div>
     </div>
   )
 }
@@ -116,12 +187,18 @@ export default async function AdminDashboardPage({ searchParams }) {
     certifications,
     educationItems,
     experienceItems,
+    homeSections,
     projects,
     researchItems,
     siteSettings,
     skills,
     socialLinks,
   } = await getAdminDashboardData()
+
+  const skillApplicationOptions = [
+    ...projects.map((project) => ({ value: `project:${project.slug}`, label: `Project: ${project.title}` })),
+    ...researchItems.map((item) => ({ value: `research:${item.id}`, label: `Research: ${item.title}` })),
+  ]
 
   const noticeTone =
     status === "success"
@@ -142,6 +219,7 @@ export default async function AdminDashboardPage({ searchParams }) {
               ["Research", researchItems.length],
               ["Skills", skills.length],
               ["Experience", experienceItems.length],
+              ["Home sections", homeSections.length],
               ["Social links", socialLinks.length],
             ].map(([label, value]) => (
               <div key={label} className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
@@ -289,20 +367,110 @@ export default async function AdminDashboardPage({ searchParams }) {
       ),
     },
     {
+      id: "home-sections",
+      label: "Home Sections",
+      content: (
+        <AdminSection
+          title="Home sections"
+          description="Control hero copy, intro notes, and homepage strength cards here. Keep the section key stable once the section is live."
+        >
+          <form action={saveHomeSectionAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+            <ActionMetaFields tab="home-sections" />
+            <TextField label="Section key" name="section_key" required placeholder="hero or strength_cv_healthcare_ai" />
+            <TextField label="Title" name="title" placeholder="Section title" />
+            <TextField label="Subtitle" name="subtitle" placeholder="Optional subtitle" />
+            <TextField label="Badge" name="badge" placeholder="Optional hero badge" />
+            <TextField label="Primary button label" name="primary_button_label" placeholder="Contact me" />
+            <TextField label="Primary button URL" name="primary_button_url" placeholder="/contact" />
+            <TextField label="Secondary button label" name="secondary_button_label" placeholder="Download CV" />
+            <TextField label="Secondary button URL" name="secondary_button_url" placeholder="https://..." />
+            <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
+            <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
+              <input id="home_section_active_new" name="is_active" type="checkbox" defaultChecked />
+              <label htmlFor="home_section_active_new" className="text-sm text-slate-300">Visible on homepage</label>
+            </div>
+            <div className="lg:col-span-2">
+              <CloudinaryImageField name="image_url" label="Image URL" folder="portfolio/home-sections" />
+            </div>
+            <div className="lg:col-span-2">
+              <TextAreaField label="Description" name="description" rows={4} />
+            </div>
+            <div className="lg:col-span-2">
+              <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                Add home section
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-8 space-y-5">
+            {homeSections.map((item) => (
+              <ManagementCard
+                key={item.id}
+                badge={item.section_key}
+                meta={item.is_active ? "Active" : "Hidden"}
+                title={item.title || item.subtitle || item.section_key}
+                deleteAction={deleteHomeSectionAction}
+                deleteId={item.id}
+                tab="home-sections"
+              >
+                <form action={saveHomeSectionAction} className="grid gap-5 lg:grid-cols-2">
+                  <ActionMetaFields tab="home-sections" id={item.id} />
+                  <TextField label="Section key" name="section_key" defaultValue={item.section_key} required />
+                  <TextField label="Title" name="title" defaultValue={item.title || ""} />
+                  <TextField label="Subtitle" name="subtitle" defaultValue={item.subtitle || ""} />
+                  <TextField label="Badge" name="badge" defaultValue={item.badge || ""} />
+                  <TextField label="Primary button label" name="primary_button_label" defaultValue={item.primary_button_label || ""} />
+                  <TextField label="Primary button URL" name="primary_button_url" defaultValue={item.primary_button_url || ""} />
+                  <TextField label="Secondary button label" name="secondary_button_label" defaultValue={item.secondary_button_label || ""} />
+                  <TextField label="Secondary button URL" name="secondary_button_url" defaultValue={item.secondary_button_url || ""} />
+                  <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
+                  <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
+                    <input id={`home-section-active-${item.id}`} name="is_active" type="checkbox" defaultChecked={item.is_active} />
+                    <label htmlFor={`home-section-active-${item.id}`} className="text-sm text-slate-300">Visible on homepage</label>
+                  </div>
+                  <div className="lg:col-span-2">
+                    <CloudinaryImageField name="image_url" label="Image URL" defaultValue={item.image_url || ""} folder="portfolio/home-sections" />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <TextAreaField label="Description" name="description" defaultValue={item.description || ""} rows={4} />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                      Save home section
+                    </button>
+                  </div>
+                </form>
+              </ManagementCard>
+            ))}
+          </div>
+        </AdminSection>
+      ),
+    },
+    {
       id: "skills",
       label: "Skills",
       content: (
-        <AdminSection title="Skills" description="Manage the skill page here. Category names will become grouped skill sections on the public site.">
+        <AdminSection
+          title="Skills"
+          description="Build a structured capability map here. Group skills by engineering domain, separate them into core or familiar buckets, and connect them to projects or research items for evidence."
+        >
           <form action={saveSkillAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
             <ActionMetaFields tab="skills" />
             <TextField label="Skill name" name="name" required placeholder="Next.js" />
-            <TextField label="Category" name="category" required placeholder="frontend or machine_learning" />
-            <TextField label="Level" name="level" type="number" defaultValue="80" />
-            <TextField label="Icon name" name="icon_name" placeholder="Optional" />
+            <SkillCategoryFields />
             <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
+            <SkillProficiencyField />
             <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
               <input id="skill_featured_new" name="is_featured" type="checkbox" />
               <label htmlFor="skill_featured_new" className="text-sm text-slate-300">Feature this skill</label>
+            </div>
+            <div className="lg:col-span-2">
+              <MultiSelectField
+                label="Applied in projects or research"
+                name="applied_in_projects"
+                options={skillApplicationOptions}
+                helperText="Hold Ctrl or Cmd to select multiple linked items."
+              />
             </div>
             <div className="lg:col-span-2">
               <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
@@ -315,27 +483,42 @@ export default async function AdminDashboardPage({ searchParams }) {
             {skills.map((item) => (
               <ManagementCard
                 key={item.id}
-                badge={item.category}
-                meta={`Level ${item.level || 0}`}
+                badge={getSkillCategoryLabel(item.category)}
+                meta={item.proficiency_bucket === "familiar" ? "Familiar / Secondary" : "Core Toolset"}
                 title={item.name}
                 deleteAction={deleteSkillAction}
                 deleteId={item.id}
                 tab="skills"
               >
-                <form action={saveSkillAction} className="grid gap-5">
+                <form action={saveSkillAction} className="grid gap-5 lg:grid-cols-2">
                   <ActionMetaFields tab="skills" id={item.id} />
                   <TextField label="Skill name" name="name" defaultValue={item.name} required />
-                  <TextField label="Category" name="category" defaultValue={item.category} required />
-                  <TextField label="Level" name="level" type="number" defaultValue={item.level ?? 75} />
-                  <TextField label="Icon name" name="icon_name" defaultValue={item.icon_name || ""} />
+                  <SkillCategoryFields defaultCategory={item.category} />
                   <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
+                  <SkillProficiencyField defaultValue={item.proficiency_bucket || "core"} />
                   <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
                     <input id={`skill-featured-${item.id}`} name="is_featured" type="checkbox" defaultChecked={item.is_featured} />
                     <label htmlFor={`skill-featured-${item.id}`} className="text-sm text-slate-300">Feature this skill</label>
                   </div>
-                  <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
-                    Save skill
-                  </button>
+                  <div className="lg:col-span-2">
+                    <MultiSelectField
+                      label="Applied in projects or research"
+                      name="applied_in_projects"
+                      defaultValue={item.applied_in_projects || []}
+                      options={skillApplicationOptions}
+                      helperText="Linked items will appear in front-end hover proof tooltips."
+                    />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <p className="text-xs text-slate-500">
+                      Current category: {getSkillCategoryLabel(item.category)} ({item.category})
+                    </p>
+                  </div>
+                  <div className="lg:col-span-2">
+                    <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                      Save skill
+                    </button>
+                  </div>
                 </form>
               </ManagementCard>
             ))}
@@ -492,6 +675,12 @@ export default async function AdminDashboardPage({ searchParams }) {
               <label htmlFor="education_current_new" className="text-sm text-slate-300">Currently ongoing</label>
             </div>
             <div className="lg:col-span-2">
+              <TextAreaField label="Core focus" name="core_focus" rows={3} placeholder="Core Focus: Digital Signal Processing, Embedded Systems, Machine Learning..." />
+            </div>
+            <div className="lg:col-span-2">
+              <CloudinaryImageField name="image_url" label="Education / certificate preview image" folder="portfolio/education" />
+            </div>
+            <div className="lg:col-span-2">
               <TextAreaField label="Description" name="description" rows={4} />
             </div>
             <div className="lg:col-span-2">
@@ -526,6 +715,17 @@ export default async function AdminDashboardPage({ searchParams }) {
                     <label htmlFor={`education-current-${item.id}`} className="text-sm text-slate-300">Currently ongoing</label>
                   </div>
                   <div className="lg:col-span-2">
+                    <TextAreaField label="Core focus" name="core_focus" defaultValue={item.core_focus || ""} rows={3} />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <CloudinaryImageField
+                      name="image_url"
+                      label="Education / certificate preview image"
+                      defaultValue={item.image_url || ""}
+                      folder="portfolio/education"
+                    />
+                  </div>
+                  <div className="lg:col-span-2">
                     <TextAreaField label="Description" name="description" defaultValue={item.description || ""} rows={4} />
                   </div>
                   <div className="lg:col-span-2">
@@ -550,9 +750,11 @@ export default async function AdminDashboardPage({ searchParams }) {
             <TextField label="Item type" name="item_type" defaultValue="conference" />
             <TextField label="Title" name="title" required />
             <TextField label="Venue or journal" name="event_or_journal" />
+            <TextField label="Authors" name="authors" placeholder="Author 1, Author 2, Author 3" />
             <TextField label="Publication date" name="publication_date" type="date" />
             <TextField label="Status" name="status" defaultValue="in_progress" />
             <TextField label="Paper URL" name="paper_url" />
+            <TextField label="Code / GitHub URL" name="code_url" />
             <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
             <TextField label="Tags" name="tags" placeholder="Machine Learning, Accessibility" />
             <CloudinaryImageField name="image_url" label="Research image URL" folder="portfolio/research" />
@@ -583,9 +785,11 @@ export default async function AdminDashboardPage({ searchParams }) {
                   <TextField label="Item type" name="item_type" defaultValue={item.item_type || "research"} />
                   <TextField label="Title" name="title" defaultValue={item.title} required />
                   <TextField label="Venue or journal" name="event_or_journal" defaultValue={item.event_or_journal || ""} />
+                  <TextField label="Authors" name="authors" defaultValue={item.authors || ""} />
                   <TextField label="Publication date" name="publication_date" type="date" defaultValue={toDateInputValue(item.publication_date)} />
                   <TextField label="Status" name="status" defaultValue={item.status || "in_progress"} />
                   <TextField label="Paper URL" name="paper_url" defaultValue={item.paper_url || ""} />
+                  <TextField label="Code / GitHub URL" name="code_url" defaultValue={item.code_url || ""} />
                   <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
                   <TextField label="Tags" name="tags" defaultValue={(item.tags || []).join(", ")} />
                   <CloudinaryImageField name="image_url" label="Research image URL" defaultValue={item.image_url || ""} folder="portfolio/research" />

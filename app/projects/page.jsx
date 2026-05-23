@@ -10,7 +10,7 @@ function FilterLink({ active, href, label }) {
       href={href}
       className={`rounded-full border px-4 py-2 text-sm transition ${
         active
-          ? "border-sky-300/30 bg-sky-300/10 text-sky-100"
+          ? "border-[#7dd3fc]/55 bg-[rgba(125,211,252,0.18)] text-white shadow-[0_0_0_1px_rgba(125,211,252,0.28),0_0_26px_rgba(125,211,252,0.22)]"
           : "border-white/10 bg-transparent text-slate-300 hover:border-sky-300/25 hover:text-white"
       }`}
     >
