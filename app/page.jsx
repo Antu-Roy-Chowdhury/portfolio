@@ -2,7 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import SiteShell from "@/components/SiteShell"
 import { getHomeContent } from "@/lib/portfolio-content"
-
+<meta name="google-site-verification" content="6ucf9Waw55dvsgAfqWAXzRxHfsrnWFajHQZjkQUileg" />
 export default async function Home() {
   const { experiences, featuredProjects, hero, highlightStats, siteMeta, skillGroups, strengths } = await getHomeContent()
   const personSchema = {
