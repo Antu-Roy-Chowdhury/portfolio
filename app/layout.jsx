@@ -15,6 +15,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://anturoychowdhury.ve
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
+
   icons: {
     icon: "/favicon.png",
     shortcut: "/favicon.png",
@@ -49,6 +50,9 @@ export const metadata = {
     description:
       "Bridging the gap between engineering research and intelligent software through practical ML, image processing, and full-stack prototyping.",
     siteName: "Antu Roy Chowdhury Portfolio",
+    verification: {
+    google: "6ucf9Waw55dvsgAfqWAXzRxHfsrnWFajHQZjkQUileg",
+  },
     images: [
       {
         url: "/potraint.png",
