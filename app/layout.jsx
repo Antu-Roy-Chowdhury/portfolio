@@ -17,9 +17,9 @@ export const metadata = {
   metadataBase: new URL(siteUrl),
 
   icons: {
-    icon: "/favicon.png",
-    shortcut: "/favicon.png",
-    apple: "/favicon.png",
+    icon: "/favicon2.png",
+    shortcut: "/favicon2.png",
+    apple: "/favicon2.png",
   },
   title: {
     default: "Antu Roy Chowdhury | Research-Oriented Software Portfolio",
@@ -29,6 +29,10 @@ export const metadata = {
     "Electronics & Telecommunication Engineering student at RUET specializing in practical machine learning, image processing, and full-stack prototyping.",
   keywords: [
     "Antu Roy Chowdhury",
+    "Antu",
+    "Antu Roy",
+    "ETE",
+    "Electronics & Telecommunication Engineering",
     "RUET",
     "machine learning",
     "computer vision",
@@ -36,6 +40,7 @@ export const metadata = {
     "embedded systems",
     "full-stack developer",
     "research portfolio",
+    "software portfolio",
   ],
   authors: [{ name: "Antu Roy Chowdhury", url: siteUrl }],
   creator: "Antu Roy Chowdhury",
