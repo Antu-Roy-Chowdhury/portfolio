@@ -11,7 +11,7 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-display",
 })
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://anturoychowdhury.vercel.app"
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://anturoychowdhury.me"
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
