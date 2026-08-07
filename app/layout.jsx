@@ -18,11 +18,11 @@ export const metadata = {
 
   icons: {
     icon: [
-      { url: '/favicon-03.svg', type: 'image/svg+xml' },
-      { url: '/favicon2.png', sizes: '48x48', type: 'image/png' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon.png', sizes: '48x48', type: 'image/png' },
     ],
     apple: [
-      { url: '/favicon2.png', sizes: '180x180', type: 'image/png' },
+      { url: '/icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
   title: {
