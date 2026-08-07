@@ -17,9 +17,13 @@ export const metadata = {
   metadataBase: new URL(siteUrl),
 
   icons: {
-    icon: "/favicon2.png",
-    shortcut: "/favicon2.png",
-    apple: "/favicon2.png",
+    icon: [
+      { url: '/favicon-03.svg', type: 'image/svg+xml' },
+      { url: '/favicon2.png', sizes: '48x48', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/favicon2.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
   title: {
     default: "Antu Roy Chowdhury | Research-Oriented Software Portfolio",
