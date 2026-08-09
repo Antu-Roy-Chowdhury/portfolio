@@ -43,6 +43,11 @@ export default async function ProjectPage({ params }) {
                   Live site
                 </a>
               )}
+              {project.caseStudy !== "#" && (
+                <a href={project.caseStudy} target="_blank" rel="noreferrer" className="rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10">
+                  Case study
+                </a>
+              )}
             </div>
           </div>
 
@@ -53,7 +58,7 @@ export default async function ProjectPage({ params }) {
             <div className="space-y-2 p-2">
               <div className="flex items-center justify-between gap-4 text-sm text-slate-400">
                 <span>Status</span>
-                <span>{project.timeline === "Ongoing" ? "In progress" : "Completed"}</span>
+                <span>{project.status.replace(/[_-]/g, " ")}</span>
               </div>
             </div>
           </div>

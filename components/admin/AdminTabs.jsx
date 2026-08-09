@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 export default function AdminTabs({ initialTab, sections }) {
@@ -9,8 +9,35 @@ export default function AdminTabs({ initialTab, sections }) {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const dirtyRef = useRef(false)
+
+  useEffect(() => {
+    const markDirty = (event) => {
+      if (event.target.closest("form")?.dataset.adminEditor === "true") dirtyRef.current = true
+    }
+    const clearDirty = (event) => {
+      if (event.target.dataset.adminEditor === "true") dirtyRef.current = false
+    }
+    const warn = (event) => {
+      if (!dirtyRef.current) return
+      event.preventDefault()
+      event.returnValue = ""
+    }
+    document.addEventListener("input", markDirty)
+    document.addEventListener("change", markDirty)
+    document.addEventListener("submit", clearDirty)
+    window.addEventListener("beforeunload", warn)
+    return () => {
+      document.removeEventListener("input", markDirty)
+      document.removeEventListener("change", markDirty)
+      document.removeEventListener("submit", clearDirty)
+      window.removeEventListener("beforeunload", warn)
+    }
+  }, [])
 
   function handleTabChange(nextTab) {
+    if (dirtyRef.current && !window.confirm("You have unsaved changes. Leave this editor tab?")) return
+    dirtyRef.current = false
     setActiveTab(nextTab)
     const params = new URLSearchParams(searchParams.toString())
     params.set("tab", nextTab)

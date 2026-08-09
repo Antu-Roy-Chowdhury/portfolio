@@ -1,6 +1,8 @@
 import AdminTabs from "@/components/admin/AdminTabs"
 import CloudinaryImageField from "@/components/admin/CloudinaryImageField"
 import SocialPlatformField from "@/components/admin/SocialPlatformField"
+import CurrentPeriodFields from "@/components/admin/CurrentPeriodFields"
+import { DeleteForm, SubmitButton } from "@/components/admin/AdminFormControls"
 import {
   deleteAchievementAction,
   deleteCertificationAction,
@@ -39,21 +41,21 @@ function AdminSection({ title, description, children }) {
   )
 }
 
-function TextField({ label, name, defaultValue = "", placeholder = "", required = false, type = "text" }) {
+function TextField({ label, name, defaultValue = "", placeholder = "", required = false, type = "text", ...inputProps }) {
   return (
-    <div className="space-y-2">
-      <label className="block text-sm text-slate-300">{label}</label>
-      <input name={name} type={type} defaultValue={defaultValue} placeholder={placeholder} required={required} className="form-input" />
-    </div>
+    <label className="space-y-2">
+      <span className="block text-sm text-slate-300">{label}</span>
+      <input name={name} type={type} defaultValue={defaultValue} placeholder={placeholder} required={required} className="form-input" {...inputProps} />
+    </label>
   )
 }
 
 function TextAreaField({ label, name, defaultValue = "", rows = 5, placeholder = "" }) {
   return (
-    <div className="space-y-2">
-      <label className="block text-sm text-slate-300">{label}</label>
+    <label className="space-y-2">
+      <span className="block text-sm text-slate-300">{label}</span>
       <textarea name={name} defaultValue={defaultValue} rows={rows} placeholder={placeholder} className="form-input min-h-28" />
-    </div>
+    </label>
   )
 }
 
@@ -73,16 +75,19 @@ function SelectField({ label, name, defaultValue = "", options = [] }) {
 }
 
 function MultiSelectField({ label, name, defaultValue = [], options = [], helperText = "" }) {
+  const selected = new Set(defaultValue)
   return (
     <div className="space-y-2">
-      <label className="block text-sm text-slate-300">{label}</label>
-      <select name={name} multiple defaultValue={defaultValue} className="form-input min-h-40">
+      <p className="block text-sm text-slate-300">{label}</p>
+      <div className="grid max-h-64 gap-2 overflow-y-auto rounded-[1.25rem] border border-white/10 bg-black/10 p-3 sm:grid-cols-2">
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
+          <label key={option.value} className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200">
+            <input type="checkbox" name={name} value={option.value} defaultChecked={selected.has(option.value)} />
+            <span>{option.label}</span>
+          </label>
         ))}
-      </select>
+        {!options.length ? <p className="text-xs text-slate-500">Add a project or research item before linking evidence.</p> : null}
+      </div>
       {helperText ? <p className="text-xs text-slate-500">{helperText}</p> : null}
     </div>
   )
@@ -164,12 +169,7 @@ function ManagementCard({ badge, meta, title, children, deleteAction, deleteId, 
       <div className="mt-6 border-t border-white/10 pt-6">
         {children}
         {deleteAction && deleteId ? (
-          <form action={deleteAction} className="mt-5">
-            <ActionMetaFields tab={tab} id={deleteId} />
-            <button type="submit" className="text-sm text-rose-300 transition hover:text-rose-200">
-              Delete item
-            </button>
-          </form>
+          <DeleteForm action={deleteAction} id={deleteId} tab={tab} title={title} />
         ) : null}
       </div>
     </details>
@@ -188,6 +188,7 @@ export default async function AdminDashboardPage({ searchParams }) {
     educationItems,
     experienceItems,
     homeSections,
+    loadErrors,
     projects,
     researchItems,
     siteSettings,
@@ -239,13 +240,20 @@ export default async function AdminDashboardPage({ searchParams }) {
           title="Global site settings"
           description="These values control the public identity of the portfolio. Update your name, portrait, resume link, and dotted background colors here."
         >
-          <form action={saveSiteSettingsAction} className="grid gap-5 lg:grid-cols-2">
+          <form action={saveSiteSettingsAction} data-admin-editor="true" className="grid gap-5 lg:grid-cols-2">
             <ActionMetaFields tab="site-settings" id={siteSettings?.id || ""} />
             <TextField label="Site title" name="site_title" defaultValue={siteSettings?.site_title || ""} required />
             <TextField label="Primary email" name="primary_email" defaultValue={siteSettings?.primary_email || ""} />
             <TextField label="Phone" name="phone" defaultValue={siteSettings?.phone || ""} />
             <TextField label="Location" name="location" defaultValue={siteSettings?.location || ""} />
-            <TextField label="Resume URL" name="resume_url" defaultValue={siteSettings?.resume_url || ""} />
+            <CloudinaryImageField
+              name="resume_url"
+              label="Resume PDF URL"
+              defaultValue={siteSettings?.resume_url || ""}
+              folder="portfolio/resume"
+              mediaType="document"
+              placeholder="https://res.cloudinary.com/.../raw/upload/.../resume.pdf"
+            />
             <CloudinaryImageField name="portrait_image_url" label="Portrait image URL" defaultValue={siteSettings?.portrait_image_url || ""} folder="portfolio/portrait" />
             <CloudinaryImageField name="logo_url" label="Logo image URL" defaultValue={siteSettings?.logo_url || ""} folder="portfolio/brand" />
             <TextField label="Dot background color" name="dot_bg_color" defaultValue={siteSettings?.dot_bg_color || "#2a2a2a"} />
@@ -264,9 +272,9 @@ export default async function AdminDashboardPage({ searchParams }) {
               <TextAreaField label="Footer text" name="footer_text" defaultValue={siteSettings?.footer_text || ""} rows={3} />
             </div>
             <div className="lg:col-span-2">
-              <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+              <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                 Save site settings
-              </button>
+              </SubmitButton>
             </div>
           </form>
         </AdminSection>
@@ -280,7 +288,7 @@ export default async function AdminDashboardPage({ searchParams }) {
           title="Projects"
           description="Create and edit projects here. Tech stack should be comma-separated. Existing items are grouped in editor cards so the list stays manageable."
         >
-          <form action={saveProjectAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+          <form action={saveProjectAction} data-admin-editor="true" className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
             <ActionMetaFields tab="projects" />
             <TextField label="Title" name="title" required placeholder="Project title" />
             <TextField label="Slug" name="slug" required placeholder="project-slug" />
@@ -309,9 +317,9 @@ export default async function AdminDashboardPage({ searchParams }) {
               </label>
             </div>
             <div className="lg:col-span-2">
-              <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+              <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                 Add project
-              </button>
+              </SubmitButton>
             </div>
           </form>
 
@@ -326,7 +334,7 @@ export default async function AdminDashboardPage({ searchParams }) {
                 deleteId={project.id}
                 tab="projects"
               >
-                <form action={saveProjectAction} className="grid gap-5 lg:grid-cols-2">
+                <form action={saveProjectAction} data-admin-editor="true" className="grid gap-5 lg:grid-cols-2">
                   <ActionMetaFields tab="projects" id={project.id} />
                   <TextField label="Title" name="title" defaultValue={project.title} required />
                   <TextField label="Slug" name="slug" defaultValue={project.slug} required />
@@ -355,9 +363,9 @@ export default async function AdminDashboardPage({ searchParams }) {
                     </label>
                   </div>
                   <div className="lg:col-span-2">
-                    <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                    <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                       Save project
-                    </button>
+                    </SubmitButton>
                   </div>
                 </form>
               </ManagementCard>
@@ -374,7 +382,7 @@ export default async function AdminDashboardPage({ searchParams }) {
           title="Home sections"
           description="Control hero copy, intro notes, and homepage strength cards here. Keep the section key stable once the section is live."
         >
-          <form action={saveHomeSectionAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+          <form action={saveHomeSectionAction} data-admin-editor="true" className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
             <ActionMetaFields tab="home-sections" />
             <TextField label="Section key" name="section_key" required placeholder="hero or strength_cv_healthcare_ai" />
             <TextField label="Title" name="title" placeholder="Section title" />
@@ -396,9 +404,9 @@ export default async function AdminDashboardPage({ searchParams }) {
               <TextAreaField label="Description" name="description" rows={4} />
             </div>
             <div className="lg:col-span-2">
-              <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+              <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                 Add home section
-              </button>
+              </SubmitButton>
             </div>
           </form>
 
@@ -413,9 +421,9 @@ export default async function AdminDashboardPage({ searchParams }) {
                 deleteId={item.id}
                 tab="home-sections"
               >
-                <form action={saveHomeSectionAction} className="grid gap-5 lg:grid-cols-2">
+                <form action={saveHomeSectionAction} data-admin-editor="true" className="grid gap-5 lg:grid-cols-2">
                   <ActionMetaFields tab="home-sections" id={item.id} />
-                  <TextField label="Section key" name="section_key" defaultValue={item.section_key} required />
+                  <TextField label="Section key" name="section_key" defaultValue={item.section_key} required readOnly aria-readonly="true" />
                   <TextField label="Title" name="title" defaultValue={item.title || ""} />
                   <TextField label="Subtitle" name="subtitle" defaultValue={item.subtitle || ""} />
                   <TextField label="Badge" name="badge" defaultValue={item.badge || ""} />
@@ -435,9 +443,9 @@ export default async function AdminDashboardPage({ searchParams }) {
                     <TextAreaField label="Description" name="description" defaultValue={item.description || ""} rows={4} />
                   </div>
                   <div className="lg:col-span-2">
-                    <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                    <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                       Save home section
-                    </button>
+                    </SubmitButton>
                   </div>
                 </form>
               </ManagementCard>
@@ -454,7 +462,7 @@ export default async function AdminDashboardPage({ searchParams }) {
           title="Skills"
           description="Build a structured capability map here. Group skills by engineering domain, separate them into core or familiar buckets, and connect them to projects or research items for evidence."
         >
-          <form action={saveSkillAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+          <form action={saveSkillAction} data-admin-editor="true" className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
             <ActionMetaFields tab="skills" />
             <TextField label="Skill name" name="name" required placeholder="Next.js" />
             <SkillCategoryFields />
@@ -469,13 +477,13 @@ export default async function AdminDashboardPage({ searchParams }) {
                 label="Applied in projects or research"
                 name="applied_in_projects"
                 options={skillApplicationOptions}
-                helperText="Hold Ctrl or Cmd to select multiple linked items."
+                helperText="Choose any number of linked projects or research items."
               />
             </div>
             <div className="lg:col-span-2">
-              <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+              <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                 Add skill
-              </button>
+              </SubmitButton>
             </div>
           </form>
 
@@ -490,7 +498,7 @@ export default async function AdminDashboardPage({ searchParams }) {
                 deleteId={item.id}
                 tab="skills"
               >
-                <form action={saveSkillAction} className="grid gap-5 lg:grid-cols-2">
+                <form action={saveSkillAction} data-admin-editor="true" className="grid gap-5 lg:grid-cols-2">
                   <ActionMetaFields tab="skills" id={item.id} />
                   <TextField label="Skill name" name="name" defaultValue={item.name} required />
                   <SkillCategoryFields defaultCategory={item.category} />
@@ -515,9 +523,9 @@ export default async function AdminDashboardPage({ searchParams }) {
                     </p>
                   </div>
                   <div className="lg:col-span-2">
-                    <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                    <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                       Save skill
-                    </button>
+                    </SubmitButton>
                   </div>
                 </form>
               </ManagementCard>
@@ -531,19 +539,15 @@ export default async function AdminDashboardPage({ searchParams }) {
       label: "Experience Timeline",
       content: (
         <AdminSection title="Experience timeline" description="This section powers the About page timeline. Use one highlight per line to keep the public summary clean.">
-          <form action={saveExperienceAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+          <form action={saveExperienceAction} data-admin-editor="true" className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
             <ActionMetaFields tab="experience" />
             <TextField label="Title" name="title" required placeholder="Co-Founder" />
             <TextField label="Organization" name="organization" required placeholder="Ukil Chamber" />
             <TextField label="Employment type" name="employment_type" placeholder="Full-time, Internship" />
             <TextField label="Location" name="location" placeholder="Rajshahi, Bangladesh" />
             <TextField label="Start date" name="start_date" type="date" />
-            <TextField label="End date" name="end_date" type="date" />
             <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
-            <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
-              <input id="experience_current_new" name="is_current" type="checkbox" />
-              <label htmlFor="experience_current_new" className="text-sm text-slate-300">Current role</label>
-            </div>
+            <CurrentPeriodFields checkboxId="experience_current_new" checkboxLabel="Current role" />
             <div className="lg:col-span-2">
               <TextAreaField label="Description" name="description" rows={4} />
             </div>
@@ -551,9 +555,9 @@ export default async function AdminDashboardPage({ searchParams }) {
               <TextAreaField label="Highlights" name="highlights" rows={4} placeholder={"One achievement per line"} />
             </div>
             <div className="lg:col-span-2">
-              <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+              <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                 Add experience
-              </button>
+              </SubmitButton>
             </div>
           </form>
 
@@ -568,19 +572,20 @@ export default async function AdminDashboardPage({ searchParams }) {
                 deleteId={item.id}
                 tab="experience"
               >
-                <form action={saveExperienceAction} className="grid gap-5 lg:grid-cols-2">
+                <form action={saveExperienceAction} data-admin-editor="true" className="grid gap-5 lg:grid-cols-2">
                   <ActionMetaFields tab="experience" id={item.id} />
                   <TextField label="Title" name="title" defaultValue={item.title} required />
                   <TextField label="Organization" name="organization" defaultValue={item.organization} required />
                   <TextField label="Employment type" name="employment_type" defaultValue={item.employment_type || ""} />
                   <TextField label="Location" name="location" defaultValue={item.location || ""} />
                   <TextField label="Start date" name="start_date" type="date" defaultValue={toDateInputValue(item.start_date)} />
-                  <TextField label="End date" name="end_date" type="date" defaultValue={toDateInputValue(item.end_date)} />
                   <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
-                  <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
-                    <input id={`experience-current-${item.id}`} name="is_current" type="checkbox" defaultChecked={item.is_current} />
-                    <label htmlFor={`experience-current-${item.id}`} className="text-sm text-slate-300">Current role</label>
-                  </div>
+                  <CurrentPeriodFields
+                    defaultCurrent={item.is_current}
+                    defaultEnd={toDateInputValue(item.end_date)}
+                    checkboxId={`experience-current-${item.id}`}
+                    checkboxLabel="Current role"
+                  />
                   <div className="lg:col-span-2">
                     <TextAreaField label="Description" name="description" defaultValue={item.description || ""} rows={4} />
                   </div>
@@ -588,9 +593,9 @@ export default async function AdminDashboardPage({ searchParams }) {
                     <TextAreaField label="Highlights" name="highlights" defaultValue={(item.highlights || []).join("\n")} rows={4} />
                   </div>
                   <div className="lg:col-span-2">
-                    <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                    <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                       Save experience
-                    </button>
+                    </SubmitButton>
                   </div>
                 </form>
               </ManagementCard>
@@ -604,7 +609,7 @@ export default async function AdminDashboardPage({ searchParams }) {
       label: "Certifications",
       content: (
         <AdminSection title="Certifications" description="Store certificate details and optional image URLs for visual presentation on the public site.">
-          <form action={saveCertificationAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5">
+          <form action={saveCertificationAction} data-admin-editor="true" className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5">
             <ActionMetaFields tab="certifications" />
             <TextField label="Title" name="title" required />
             <TextField label="Issuer" name="issuer" required />
@@ -617,9 +622,9 @@ export default async function AdminDashboardPage({ searchParams }) {
               <input id="cert_featured_new" name="is_featured" type="checkbox" />
               <label htmlFor="cert_featured_new" className="text-sm text-slate-300">Featured certificate</label>
             </div>
-            <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+            <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
               Add certification
-            </button>
+            </SubmitButton>
           </form>
 
           <div className="mt-8 space-y-5">
@@ -633,7 +638,7 @@ export default async function AdminDashboardPage({ searchParams }) {
                 deleteId={item.id}
                 tab="certifications"
               >
-                <form action={saveCertificationAction} className="grid gap-5">
+                <form action={saveCertificationAction} data-admin-editor="true" className="grid gap-5">
                   <ActionMetaFields tab="certifications" id={item.id} />
                   <TextField label="Title" name="title" defaultValue={item.title} required />
                   <TextField label="Issuer" name="issuer" defaultValue={item.issuer} required />
@@ -646,9 +651,9 @@ export default async function AdminDashboardPage({ searchParams }) {
                     <input id={`cert-featured-${item.id}`} name="is_featured" type="checkbox" defaultChecked={item.is_featured} />
                     <label htmlFor={`cert-featured-${item.id}`} className="text-sm text-slate-300">Featured certificate</label>
                   </div>
-                  <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                  <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                     Save certification
-                  </button>
+                  </SubmitButton>
                 </form>
               </ManagementCard>
             ))}
@@ -661,19 +666,15 @@ export default async function AdminDashboardPage({ searchParams }) {
       label: "Education",
       content: (
         <AdminSection title="Education" description="Keep academic details editable here, including degree updates, CGPA, and descriptions.">
-          <form action={saveEducationAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+          <form action={saveEducationAction} data-admin-editor="true" className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
             <ActionMetaFields tab="education" />
             <TextField label="Degree" name="degree" required />
             <TextField label="Institution" name="institution" required />
             <TextField label="Field of study" name="field_of_study" />
-            <TextField label="Start year" name="start_year" type="number" />
-            <TextField label="End year" name="end_year" type="number" />
+            <TextField label="Start year" name="start_year" type="number" min="1900" max="2100" />
             <TextField label="Result" name="result" />
             <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
-            <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
-              <input id="education_current_new" name="is_current" type="checkbox" />
-              <label htmlFor="education_current_new" className="text-sm text-slate-300">Currently ongoing</label>
-            </div>
+            <CurrentPeriodFields kind="year" checkboxId="education_current_new" checkboxLabel="Currently ongoing" />
             <div className="lg:col-span-2">
               <TextAreaField label="Core focus" name="core_focus" rows={3} placeholder="Core Focus: Digital Signal Processing, Embedded Systems, Machine Learning..." />
             </div>
@@ -684,9 +685,9 @@ export default async function AdminDashboardPage({ searchParams }) {
               <TextAreaField label="Description" name="description" rows={4} />
             </div>
             <div className="lg:col-span-2">
-              <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+              <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                 Add education
-              </button>
+              </SubmitButton>
             </div>
           </form>
 
@@ -701,19 +702,21 @@ export default async function AdminDashboardPage({ searchParams }) {
                 deleteId={item.id}
                 tab="education"
               >
-                <form action={saveEducationAction} className="grid gap-5 lg:grid-cols-2">
+                <form action={saveEducationAction} data-admin-editor="true" className="grid gap-5 lg:grid-cols-2">
                   <ActionMetaFields tab="education" id={item.id} />
                   <TextField label="Degree" name="degree" defaultValue={item.degree} required />
                   <TextField label="Institution" name="institution" defaultValue={item.institution} required />
                   <TextField label="Field of study" name="field_of_study" defaultValue={item.field_of_study || ""} />
-                  <TextField label="Start year" name="start_year" type="number" defaultValue={item.start_year || ""} />
-                  <TextField label="End year" name="end_year" type="number" defaultValue={item.end_year || ""} />
+                  <TextField label="Start year" name="start_year" type="number" min="1900" max="2100" defaultValue={item.start_year || ""} />
                   <TextField label="Result" name="result" defaultValue={item.result || ""} />
                   <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
-                  <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
-                    <input id={`education-current-${item.id}`} name="is_current" type="checkbox" defaultChecked={item.is_current} />
-                    <label htmlFor={`education-current-${item.id}`} className="text-sm text-slate-300">Currently ongoing</label>
-                  </div>
+                  <CurrentPeriodFields
+                    kind="year"
+                    defaultCurrent={item.is_current}
+                    defaultEnd={item.end_year || ""}
+                    checkboxId={`education-current-${item.id}`}
+                    checkboxLabel="Currently ongoing"
+                  />
                   <div className="lg:col-span-2">
                     <TextAreaField label="Core focus" name="core_focus" defaultValue={item.core_focus || ""} rows={3} />
                   </div>
@@ -729,9 +732,9 @@ export default async function AdminDashboardPage({ searchParams }) {
                     <TextAreaField label="Description" name="description" defaultValue={item.description || ""} rows={4} />
                   </div>
                   <div className="lg:col-span-2">
-                    <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                    <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                       Save education
-                    </button>
+                    </SubmitButton>
                   </div>
                 </form>
               </ManagementCard>
@@ -745,7 +748,7 @@ export default async function AdminDashboardPage({ searchParams }) {
       label: "Research Items",
       content: (
         <AdminSection title="Research items" description="Manage published papers and ongoing research. Tags should be comma-separated.">
-          <form action={saveResearchAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5">
+          <form action={saveResearchAction} data-admin-editor="true" className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5">
             <ActionMetaFields tab="research" />
             <TextField label="Item type" name="item_type" defaultValue="conference" />
             <TextField label="Title" name="title" required />
@@ -764,9 +767,9 @@ export default async function AdminDashboardPage({ searchParams }) {
               <input id="research_featured_new" name="featured" type="checkbox" />
               <label htmlFor="research_featured_new" className="text-sm text-slate-300">Featured research item</label>
             </div>
-            <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+            <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
               Add research item
-            </button>
+            </SubmitButton>
           </form>
 
           <div className="mt-8 space-y-5">
@@ -780,7 +783,7 @@ export default async function AdminDashboardPage({ searchParams }) {
                 deleteId={item.id}
                 tab="research"
               >
-                <form action={saveResearchAction} className="grid gap-5">
+                <form action={saveResearchAction} data-admin-editor="true" className="grid gap-5">
                   <ActionMetaFields tab="research" id={item.id} />
                   <TextField label="Item type" name="item_type" defaultValue={item.item_type || "research"} />
                   <TextField label="Title" name="title" defaultValue={item.title} required />
@@ -799,9 +802,9 @@ export default async function AdminDashboardPage({ searchParams }) {
                     <input id={`research-featured-${item.id}`} name="featured" type="checkbox" defaultChecked={item.featured} />
                     <label htmlFor={`research-featured-${item.id}`} className="text-sm text-slate-300">Featured research item</label>
                   </div>
-                  <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                  <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                     Save research item
-                  </button>
+                  </SubmitButton>
                 </form>
               </ManagementCard>
             ))}
@@ -814,7 +817,7 @@ export default async function AdminDashboardPage({ searchParams }) {
       label: "Social Links",
       content: (
         <AdminSection title="Social links" description="Manage the social tree here. Choose a platform button so the matching icon stays consistent across the site.">
-          <form action={saveSocialLinkAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+          <form action={saveSocialLinkAction} data-admin-editor="true" className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
             <ActionMetaFields tab="socials" />
             <div className="lg:col-span-2">
               <SocialPlatformField />
@@ -828,9 +831,9 @@ export default async function AdminDashboardPage({ searchParams }) {
               <label htmlFor="social_visible_new" className="text-sm text-slate-300">Visible on portfolio</label>
             </div>
             <div className="lg:col-span-2">
-              <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+              <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                 Add social link
-              </button>
+              </SubmitButton>
             </div>
           </form>
 
@@ -845,7 +848,7 @@ export default async function AdminDashboardPage({ searchParams }) {
                 deleteId={item.id}
                 tab="socials"
               >
-                <form action={saveSocialLinkAction} className="grid gap-5">
+                <form action={saveSocialLinkAction} data-admin-editor="true" className="grid gap-5">
                   <ActionMetaFields tab="socials" id={item.id} />
                   <SocialPlatformField defaultValue={item.platform} />
                   <TextField label="Label" name="label" defaultValue={item.label || ""} />
@@ -856,9 +859,9 @@ export default async function AdminDashboardPage({ searchParams }) {
                     <input id={`social-visible-${item.id}`} name="is_visible" type="checkbox" defaultChecked={item.is_visible} />
                     <label htmlFor={`social-visible-${item.id}`} className="text-sm text-slate-300">Visible on portfolio</label>
                   </div>
-                  <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                  <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                     Save social link
-                  </button>
+                  </SubmitButton>
                 </form>
               </ManagementCard>
             ))}
@@ -871,7 +874,7 @@ export default async function AdminDashboardPage({ searchParams }) {
       label: "Achievements",
       content: (
         <AdminSection title="Achievements" description="Use this for contests, awards, leadership milestones, and recognitions.">
-          <form action={saveAchievementAction} className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
+          <form action={saveAchievementAction} data-admin-editor="true" className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
             <ActionMetaFields tab="achievements" />
             <TextField label="Title" name="title" required />
             <TextField label="Issuer or context" name="issuer" />
@@ -887,9 +890,9 @@ export default async function AdminDashboardPage({ searchParams }) {
               <label htmlFor="achievement_featured_new" className="text-sm text-slate-300">Featured achievement</label>
             </div>
             <div className="lg:col-span-2">
-              <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+              <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                 Add achievement
-              </button>
+              </SubmitButton>
             </div>
           </form>
 
@@ -904,7 +907,7 @@ export default async function AdminDashboardPage({ searchParams }) {
                 deleteId={item.id}
                 tab="achievements"
               >
-                <form action={saveAchievementAction} className="grid gap-5">
+                <form action={saveAchievementAction} data-admin-editor="true" className="grid gap-5">
                   <ActionMetaFields tab="achievements" id={item.id} />
                   <TextField label="Title" name="title" defaultValue={item.title} required />
                   <TextField label="Issuer or context" name="issuer" defaultValue={item.issuer || ""} />
@@ -917,9 +920,9 @@ export default async function AdminDashboardPage({ searchParams }) {
                     <input id={`achievement-featured-${item.id}`} name="featured" type="checkbox" defaultChecked={item.featured} />
                     <label htmlFor={`achievement-featured-${item.id}`} className="text-sm text-slate-300">Featured achievement</label>
                   </div>
-                  <button type="submit" className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
+                  <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
                     Save achievement
-                  </button>
+                  </SubmitButton>
                 </form>
               </ManagementCard>
             ))}
@@ -945,6 +948,11 @@ export default async function AdminDashboardPage({ searchParams }) {
           </form>
         </div>
         {message ? <div className={`rounded-[1.5rem] border px-5 py-4 text-sm ${noticeTone}`}>{message}</div> : null}
+        {loadErrors.length ? (
+          <div className="rounded-[1.5rem] border border-amber-300/20 bg-amber-300/10 px-5 py-4 text-sm text-amber-100">
+            {loadErrors.join(" ")} Saving affected sections is disabled by the database and will show an error.
+          </div>
+        ) : null}
         <AdminTabs initialTab={activeTab} sections={adminSections} />
       </div>
     </main>

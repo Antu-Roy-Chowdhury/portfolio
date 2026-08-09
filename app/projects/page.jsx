@@ -27,7 +27,7 @@ export default async function ProjectsPage({ searchParams }) {
   const catOptions = ["All", ...new Set(projects.flatMap((project) => project.category || []))]
   const tagOptions = ["All", ...new Set(projects.flatMap((project) => project.tech || []))]
   const filteredProjects = projects.filter((project) => {
-    const categoryMatch = activeCatagory === "All" ? true : (project.category || []).includes(activeCatagory)
+    const categoryMatch = activeCatagory === "All" ? true : project.category === activeCatagory
     const tagMatch = activeTag === "All" ? true : (project.tech || []).includes(activeTag)
     return categoryMatch && tagMatch
   })

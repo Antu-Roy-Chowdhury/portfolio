@@ -8,34 +8,43 @@ import {
   createAdminSession,
   getAdminDashboardPath,
   getAdminLoginPath,
+  requireAdmin,
   verifyAdminCredentials,
 } from "@/lib/admin-auth"
 import { getSql } from "@/lib/neon"
+import {
+  assertDateOrder,
+  assertYearOrder,
+  checkboxValue,
+  colorValue,
+  dateValue,
+  emailValue,
+  friendlyMutationError,
+  integerValue,
+  optionalText,
+  slugValue,
+  tokenValue,
+  uniqueCsv,
+  uniqueLines,
+  urlValue,
+  yearValue,
+} from "@/lib/admin-validation"
 
 function normalizeCheckbox(value) {
-  return value === "on"
+  return checkboxValue(value)
 }
 
 function normalizeOptional(value) {
-  const normalized = value ? String(value).trim() : ""
-  return normalized || null
+  return optionalText(value)
 }
 
-function normalizeNumber(value, fallback = 0) {
-  const number = Number(value)
-  return Number.isFinite(number) ? number : fallback
+function normalizeNumber(value, fallback = 0, label = "Sort order") {
+  return integerValue(value, label, { fallback })
 }
 
 function normalizeToken(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-}
-
-function normalizeYear(value) {
-  const number = Number(value)
-  return Number.isFinite(number) && number > 0 ? number : null
+  const text = String(value || "").trim()
+  return text ? tokenValue(text, "Value") : ""
 }
 
 function buildDashboardUrl(tab, status, message) {
@@ -55,14 +64,7 @@ function getReturnTab(formData, fallback = "overview") {
 }
 
 async function replaceProjectTechnologies(sql, projectId, techValue) {
-  const techNames = [
-    ...new Set(
-      String(techValue || "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-    ),
-  ]
+  const techNames = uniqueCsv(techValue)
 
   await sql`delete from project_technologies where project_id = ${projectId}`
 
@@ -78,10 +80,7 @@ async function replaceProjectTechnologies(sql, projectId, techValue) {
 }
 
 async function replaceHighlights(sql, experienceId, highlightsValue) {
-  const highlights = String(highlightsValue || "")
-    .split(/\r?\n/g)
-    .map((item) => item.trim())
-    .filter(Boolean)
+  const highlights = uniqueLines(highlightsValue)
 
   await sql`delete from experience_highlights where experience_id = ${experienceId}`
 
@@ -94,14 +93,7 @@ async function replaceHighlights(sql, experienceId, highlightsValue) {
 }
 
 async function replaceTags(sql, tableName, recordId, tagsValue) {
-  const tags = [
-    ...new Set(
-      String(tagsValue || "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-    ),
-  ]
+  const tags = uniqueCsv(tagsValue)
 
   if (tableName === "research_tags") {
     await sql`delete from research_tags where research_item_id = ${recordId}`
@@ -119,7 +111,7 @@ async function replaceTags(sql, tableName, recordId, tagsValue) {
 
 function revalidatePortfolioPaths(...extraPaths) {
   const basePaths = ["/", "/about", "/projects", "/skills", "/research", "/contact", getAdminDashboardPath()]
-  for (const path of [...basePaths, ...extraPaths]) {
+  for (const path of [...basePaths, ...extraPaths].filter(Boolean)) {
     revalidatePath(path)
   }
 }
@@ -153,11 +145,13 @@ export async function loginAction(_, formData) {
 }
 
 export async function logoutAction() {
+  await requireAdmin()
   await clearAdminSession()
   redirect(getAdminLoginPath())
 }
 
 export async function saveSiteSettingsAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "site-settings")
 
@@ -170,17 +164,17 @@ export async function saveSiteSettingsAction(formData) {
     const payload = {
       siteTitle: String(formData.get("site_title") || "").trim(),
       siteDescription: normalizeOptional(formData.get("site_description")),
-      primaryEmail: normalizeOptional(formData.get("primary_email")),
+      primaryEmail: emailValue(formData.get("primary_email"), "Primary email"),
       phone: normalizeOptional(formData.get("phone")),
       location: normalizeOptional(formData.get("location")),
-      resumeUrl: normalizeOptional(formData.get("resume_url")),
-      portraitImageUrl: normalizeOptional(formData.get("portrait_image_url")),
-      logoUrl: normalizeOptional(formData.get("logo_url")),
+      resumeUrl: urlValue(formData.get("resume_url"), "Resume URL", { allowRelative: true }),
+      portraitImageUrl: urlValue(formData.get("portrait_image_url"), "Portrait image URL", { allowRelative: true }),
+      logoUrl: urlValue(formData.get("logo_url"), "Logo image URL", { allowRelative: true }),
       footerText: normalizeOptional(formData.get("footer_text")),
       dotBgEnabled: normalizeCheckbox(formData.get("dot_bg_enabled")),
-      dotBgColor: normalizeOptional(formData.get("dot_bg_color")),
-      dotHighlightColor: normalizeOptional(formData.get("dot_highlight_color")),
-      dotHoverGlow: normalizeOptional(formData.get("dot_hover_glow")),
+      dotBgColor: colorValue(formData.get("dot_bg_color") || "#2a2a2a", "Dot background color"),
+      dotHighlightColor: colorValue(formData.get("dot_highlight_color") || "#ffffff", "Dot highlight color"),
+      dotHoverGlow: colorValue(formData.get("dot_hover_glow") || "#7dd3fc", "Dot hover glow"),
     }
 
     if (!payload.siteTitle) {
@@ -227,11 +221,12 @@ export async function saveSiteSettingsAction(formData) {
   } catch (error) {
     rethrowRedirect(error)
     console.error(error)
-    redirectToDashboard(tab, "error", "Failed to save site settings.")
+    redirectToDashboard(tab, "error", friendlyMutationError(error, "Failed to save site settings."))
   }
 }
 
 export async function saveHomeSectionAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "home-sections")
 
@@ -248,10 +243,10 @@ export async function saveHomeSectionAction(formData) {
       description: normalizeOptional(formData.get("description")),
       badge: normalizeOptional(formData.get("badge")),
       primaryButtonLabel: normalizeOptional(formData.get("primary_button_label")),
-      primaryButtonUrl: normalizeOptional(formData.get("primary_button_url")),
+      primaryButtonUrl: urlValue(formData.get("primary_button_url"), "Primary button URL", { allowRelative: true }),
       secondaryButtonLabel: normalizeOptional(formData.get("secondary_button_label")),
-      secondaryButtonUrl: normalizeOptional(formData.get("secondary_button_url")),
-      imageUrl: normalizeOptional(formData.get("image_url")),
+      secondaryButtonUrl: urlValue(formData.get("secondary_button_url"), "Secondary button URL", { allowRelative: true }),
+      imageUrl: urlValue(formData.get("image_url"), "Image URL", { allowRelative: true }),
       isActive: normalizeCheckbox(formData.get("is_active")),
       sortOrder: normalizeNumber(formData.get("sort_order")),
     }
@@ -261,6 +256,11 @@ export async function saveHomeSectionAction(formData) {
     }
 
     if (id) {
+      const existing = await sql`select section_key from home_sections where id = ${id} limit 1`
+      if (!existing[0]) redirectToDashboard(tab, "error", "Home section no longer exists.")
+      if (existing[0].section_key !== payload.sectionKey) {
+        redirectToDashboard(tab, "error", "Section keys are stable after publishing and cannot be changed here.")
+      }
       await sql`
         update home_sections
         set
@@ -299,11 +299,12 @@ export async function saveHomeSectionAction(formData) {
   } catch (error) {
     rethrowRedirect(error)
     console.error(error)
-    redirectToDashboard(tab, "error", "Failed to save home section.")
+    redirectToDashboard(tab, "error", friendlyMutationError(error, "Failed to save home section."))
   }
 }
 
 export async function deleteHomeSectionAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "home-sections")
   const id = normalizeOptional(formData.get("id"))
@@ -324,6 +325,7 @@ export async function deleteHomeSectionAction(formData) {
 }
 
 export async function saveProjectAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "projects")
 
@@ -334,15 +336,15 @@ export async function saveProjectAction(formData) {
   try {
     const id = normalizeOptional(formData.get("id"))
     const payload = {
-      slug: String(formData.get("slug") || "").trim(),
+      slug: slugValue(formData.get("slug")),
       title: String(formData.get("title") || "").trim(),
       shortDescription: normalizeOptional(formData.get("short_description")),
       fullDescription: normalizeOptional(formData.get("full_description")),
-      coverImageUrl: normalizeOptional(formData.get("cover_image_url")),
+      coverImageUrl: urlValue(formData.get("cover_image_url"), "Cover image URL", { allowRelative: true }),
       category: normalizeOptional(formData.get("category")),
-      githubUrl: normalizeOptional(formData.get("github_url")),
-      liveUrl: normalizeOptional(formData.get("live_url")),
-      caseStudyUrl: normalizeOptional(formData.get("case_study_url")),
+      githubUrl: urlValue(formData.get("github_url"), "GitHub URL"),
+      liveUrl: urlValue(formData.get("live_url"), "Live URL", { allowRelative: true }),
+      caseStudyUrl: urlValue(formData.get("case_study_url"), "Case study URL", { allowRelative: true }),
       status: normalizeOptional(formData.get("status")) || "completed",
       featured: normalizeCheckbox(formData.get("featured")),
       sortOrder: normalizeNumber(formData.get("sort_order")),
@@ -352,53 +354,55 @@ export async function saveProjectAction(formData) {
       redirectToDashboard(tab, "error", "Project title and slug are required.")
     }
 
-    let projectId = id
-
-    if (id) {
-      await sql`
-        update projects
-        set
-          slug = ${payload.slug},
-          title = ${payload.title},
-          short_description = ${payload.shortDescription},
-          full_description = ${payload.fullDescription},
-          cover_image_url = ${payload.coverImageUrl},
-          category = ${payload.category},
-          github_url = ${payload.githubUrl},
-          live_url = ${payload.liveUrl},
-          case_study_url = ${payload.caseStudyUrl},
-          status = ${payload.status},
-          featured = ${payload.featured},
-          sort_order = ${payload.sortOrder},
-          updated_at = now()
-        where id = ${id}
-      `
-    } else {
-      const inserted = await sql`
-        insert into projects (
-          slug, title, short_description, full_description, cover_image_url, category,
-          github_url, live_url, case_study_url, status, featured, sort_order
-        ) values (
-          ${payload.slug}, ${payload.title}, ${payload.shortDescription}, ${payload.fullDescription},
-          ${payload.coverImageUrl}, ${payload.category}, ${payload.githubUrl}, ${payload.liveUrl},
-          ${payload.caseStudyUrl}, ${payload.status}, ${payload.featured}, ${payload.sortOrder}
-        )
-        returning id
-      `
-      projectId = inserted[0].id
-    }
-
-    await replaceProjectTechnologies(sql, projectId, formData.get("tech_stack"))
-    revalidatePortfolioPaths(`/projects/${payload.slug}`)
+    let previousSlug = null
+    await sql.begin(async (transaction) => {
+      let projectId = id
+      if (id) {
+        const existing = await transaction`select slug from projects where id = ${id} limit 1`
+        if (!existing[0]) throw new Error("Project no longer exists.")
+        previousSlug = existing[0].slug
+        await transaction`
+          update projects
+          set
+            slug = ${payload.slug}, title = ${payload.title}, short_description = ${payload.shortDescription},
+            full_description = ${payload.fullDescription}, cover_image_url = ${payload.coverImageUrl},
+            category = ${payload.category}, github_url = ${payload.githubUrl}, live_url = ${payload.liveUrl},
+            case_study_url = ${payload.caseStudyUrl}, status = ${payload.status}, featured = ${payload.featured},
+            sort_order = ${payload.sortOrder}, updated_at = now()
+          where id = ${id}
+        `
+        if (previousSlug !== payload.slug) {
+          await transaction`
+            update skills
+            set applied_in_projects = array_replace(applied_in_projects, ${`project:${previousSlug}`}, ${`project:${payload.slug}`})
+          `
+        }
+      } else {
+        const inserted = await transaction`
+          insert into projects (
+            slug, title, short_description, full_description, cover_image_url, category,
+            github_url, live_url, case_study_url, status, featured, sort_order
+          ) values (
+            ${payload.slug}, ${payload.title}, ${payload.shortDescription}, ${payload.fullDescription},
+            ${payload.coverImageUrl}, ${payload.category}, ${payload.githubUrl}, ${payload.liveUrl},
+            ${payload.caseStudyUrl}, ${payload.status}, ${payload.featured}, ${payload.sortOrder}
+          ) returning id
+        `
+        projectId = inserted[0].id
+      }
+      await replaceProjectTechnologies(transaction, projectId, formData.get("tech_stack"))
+    })
+    revalidatePortfolioPaths(`/projects/${payload.slug}`, previousSlug ? `/projects/${previousSlug}` : null)
     redirectToDashboard(tab, "success", id ? "Project updated." : "Project added.")
   } catch (error) {
     rethrowRedirect(error)
     console.error(error)
-    redirectToDashboard(tab, "error", "Failed to save project.")
+    redirectToDashboard(tab, "error", friendlyMutationError(error, "Failed to save project."))
   }
 }
 
 export async function deleteProjectAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "projects")
   const id = normalizeOptional(formData.get("id"))
@@ -408,7 +412,16 @@ export async function deleteProjectAction(formData) {
   }
 
   try {
-    await sql`delete from projects where id = ${id}`
+    await sql.begin(async (transaction) => {
+      const rows = await transaction`select slug from projects where id = ${id} limit 1`
+      const slug = rows[0]?.slug
+      if (!slug) throw new Error("Project no longer exists.")
+      await transaction`
+        update skills
+        set applied_in_projects = array_remove(array_remove(applied_in_projects, ${`project:${slug}`}), ${slug})
+      `
+      await transaction`delete from projects where id = ${id}`
+    })
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", "Project deleted.")
   } catch (error) {
@@ -419,6 +432,7 @@ export async function deleteProjectAction(formData) {
 }
 
 export async function saveCertificationAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "certifications")
 
@@ -431,10 +445,10 @@ export async function saveCertificationAction(formData) {
     const payload = {
       title: String(formData.get("title") || "").trim(),
       issuer: String(formData.get("issuer") || "").trim(),
-      issueDate: normalizeOptional(formData.get("issue_date")),
+      issueDate: dateValue(formData.get("issue_date"), "Issue date"),
       credentialId: normalizeOptional(formData.get("credential_id")),
-      credentialUrl: normalizeOptional(formData.get("credential_url")),
-      imageUrl: normalizeOptional(formData.get("image_url")),
+      credentialUrl: urlValue(formData.get("credential_url"), "Credential URL"),
+      imageUrl: urlValue(formData.get("image_url"), "Certificate image URL", { allowRelative: true }),
       isFeatured: normalizeCheckbox(formData.get("is_featured")),
       sortOrder: normalizeNumber(formData.get("sort_order")),
     }
@@ -473,11 +487,12 @@ export async function saveCertificationAction(formData) {
   } catch (error) {
     rethrowRedirect(error)
     console.error(error)
-    redirectToDashboard(tab, "error", "Failed to save certification.")
+    redirectToDashboard(tab, "error", friendlyMutationError(error, "Failed to save certification."))
   }
 }
 
 export async function deleteCertificationAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "certifications")
   const id = normalizeOptional(formData.get("id"))
@@ -498,6 +513,7 @@ export async function deleteCertificationAction(formData) {
 }
 
 export async function saveEducationAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "education")
 
@@ -511,12 +527,12 @@ export async function saveEducationAction(formData) {
       degree: String(formData.get("degree") || "").trim(),
       institution: String(formData.get("institution") || "").trim(),
       fieldOfStudy: normalizeOptional(formData.get("field_of_study")),
-      startYear: normalizeYear(formData.get("start_year")),
-      endYear: normalizeYear(formData.get("end_year")),
+      startYear: yearValue(formData.get("start_year"), "Start year"),
+      endYear: yearValue(formData.get("end_year"), "End year"),
       isCurrent: normalizeCheckbox(formData.get("is_current")),
       result: normalizeOptional(formData.get("result")),
       coreFocus: normalizeOptional(formData.get("core_focus")),
-      imageUrl: normalizeOptional(formData.get("image_url")),
+      imageUrl: urlValue(formData.get("image_url"), "Education image URL", { allowRelative: true }),
       description: normalizeOptional(formData.get("description")),
       sortOrder: normalizeNumber(formData.get("sort_order")),
     }
@@ -524,6 +540,8 @@ export async function saveEducationAction(formData) {
     if (!payload.degree || !payload.institution) {
       redirectToDashboard(tab, "error", "Education degree and institution are required.")
     }
+    if (payload.isCurrent) payload.endYear = null
+    assertYearOrder(payload.startYear, payload.endYear)
 
     if (id) {
       await sql`
@@ -558,11 +576,12 @@ export async function saveEducationAction(formData) {
   } catch (error) {
     rethrowRedirect(error)
     console.error(error)
-    redirectToDashboard(tab, "error", "Failed to save education.")
+    redirectToDashboard(tab, "error", friendlyMutationError(error, "Failed to save education."))
   }
 }
 
 export async function deleteEducationAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "education")
   const id = normalizeOptional(formData.get("id"))
@@ -583,6 +602,7 @@ export async function deleteEducationAction(formData) {
 }
 
 export async function saveSkillAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "skills")
 
@@ -609,6 +629,16 @@ export async function saveSkillAction(formData) {
     if (!payload.name || !payload.category) {
       redirectToDashboard(tab, "error", "Skill name and category are required.")
     }
+    if (!['core', 'familiar'].includes(payload.proficiencyBucket)) {
+      redirectToDashboard(tab, "error", "Choose a valid proficiency bucket.")
+    }
+    const validReferences = new Set([
+      ...(await sql`select slug from projects`).map((item) => `project:${item.slug}`),
+      ...(await sql`select id from research_items`).map((item) => `research:${item.id}`),
+    ])
+    if (payload.appliedInProjects.some((reference) => !validReferences.has(reference))) {
+      redirectToDashboard(tab, "error", "One or more linked projects or research items no longer exist.")
+    }
 
     if (id) {
       await sql`
@@ -634,11 +664,12 @@ export async function saveSkillAction(formData) {
   } catch (error) {
     rethrowRedirect(error)
     console.error(error)
-    redirectToDashboard(tab, "error", "Failed to save skill.")
+    redirectToDashboard(tab, "error", friendlyMutationError(error, "Failed to save skill."))
   }
 }
 
 export async function deleteSkillAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "skills")
   const id = normalizeOptional(formData.get("id"))
@@ -659,6 +690,7 @@ export async function deleteSkillAction(formData) {
 }
 
 export async function saveExperienceAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "experience")
 
@@ -673,8 +705,8 @@ export async function saveExperienceAction(formData) {
       organization: String(formData.get("organization") || "").trim(),
       employmentType: normalizeOptional(formData.get("employment_type")),
       location: normalizeOptional(formData.get("location")),
-      startDate: normalizeOptional(formData.get("start_date")),
-      endDate: normalizeOptional(formData.get("end_date")),
+      startDate: dateValue(formData.get("start_date"), "Start date"),
+      endDate: dateValue(formData.get("end_date"), "End date"),
       isCurrent: normalizeCheckbox(formData.get("is_current")),
       description: normalizeOptional(formData.get("description")),
       sortOrder: normalizeNumber(formData.get("sort_order")),
@@ -683,49 +715,41 @@ export async function saveExperienceAction(formData) {
     if (!payload.title || !payload.organization) {
       redirectToDashboard(tab, "error", "Experience title and organization are required.")
     }
+    if (payload.isCurrent) payload.endDate = null
+    assertDateOrder(payload.startDate, payload.endDate)
 
-    let experienceId = id
-
-    if (id) {
-      await sql`
-        update experiences
-        set
-          title = ${payload.title},
-          organization = ${payload.organization},
-          employment_type = ${payload.employmentType},
-          location = ${payload.location},
-          start_date = ${payload.startDate},
-          end_date = ${payload.endDate},
-          is_current = ${payload.isCurrent},
-          description = ${payload.description},
-          sort_order = ${payload.sortOrder},
-          updated_at = now()
-        where id = ${id}
-      `
-    } else {
-      const inserted = await sql`
-        insert into experiences (
-          title, organization, employment_type, location, start_date, end_date, is_current, description, sort_order
-        ) values (
-          ${payload.title}, ${payload.organization}, ${payload.employmentType}, ${payload.location}, ${payload.startDate},
-          ${payload.endDate}, ${payload.isCurrent}, ${payload.description}, ${payload.sortOrder}
-        )
-        returning id
-      `
-      experienceId = inserted[0].id
-    }
-
-    await replaceHighlights(sql, experienceId, formData.get("highlights"))
+    await sql.begin(async (transaction) => {
+      let experienceId = id
+      if (id) {
+        const updated = await transaction`
+          update experiences
+          set title = ${payload.title}, organization = ${payload.organization}, employment_type = ${payload.employmentType},
+              location = ${payload.location}, start_date = ${payload.startDate}, end_date = ${payload.endDate},
+              is_current = ${payload.isCurrent}, description = ${payload.description}, sort_order = ${payload.sortOrder}, updated_at = now()
+          where id = ${id} returning id
+        `
+        if (!updated[0]) throw new Error("Experience no longer exists.")
+      } else {
+        const inserted = await transaction`
+          insert into experiences (title, organization, employment_type, location, start_date, end_date, is_current, description, sort_order)
+          values (${payload.title}, ${payload.organization}, ${payload.employmentType}, ${payload.location}, ${payload.startDate},
+                  ${payload.endDate}, ${payload.isCurrent}, ${payload.description}, ${payload.sortOrder}) returning id
+        `
+        experienceId = inserted[0].id
+      }
+      await replaceHighlights(transaction, experienceId, formData.get("highlights"))
+    })
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", id ? "Experience updated." : "Experience added.")
   } catch (error) {
     rethrowRedirect(error)
     console.error(error)
-    redirectToDashboard(tab, "error", "Failed to save experience.")
+    redirectToDashboard(tab, "error", friendlyMutationError(error, "Failed to save experience."))
   }
 }
 
 export async function deleteExperienceAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "experience")
   const id = normalizeOptional(formData.get("id"))
@@ -746,6 +770,7 @@ export async function deleteExperienceAction(formData) {
 }
 
 export async function saveResearchAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "research")
 
@@ -762,11 +787,11 @@ export async function saveResearchAction(formData) {
       abstract: normalizeOptional(formData.get("abstract")),
       eventOrJournal: normalizeOptional(formData.get("event_or_journal")),
       authors: normalizeOptional(formData.get("authors")),
-      publicationDate: normalizeOptional(formData.get("publication_date")),
+      publicationDate: dateValue(formData.get("publication_date"), "Publication date"),
       status: normalizeOptional(formData.get("status")) || "in_progress",
-      paperUrl: normalizeOptional(formData.get("paper_url")),
-      codeUrl: normalizeOptional(formData.get("code_url")),
-      imageUrl: normalizeOptional(formData.get("image_url")),
+      paperUrl: urlValue(formData.get("paper_url"), "Paper URL", { allowRelative: true }),
+      codeUrl: urlValue(formData.get("code_url"), "Code URL"),
+      imageUrl: urlValue(formData.get("image_url"), "Research image URL", { allowRelative: true }),
       featured: normalizeCheckbox(formData.get("featured")),
       sortOrder: normalizeNumber(formData.get("sort_order")),
     }
@@ -775,54 +800,42 @@ export async function saveResearchAction(formData) {
       redirectToDashboard(tab, "error", "Research title is required.")
     }
 
-    let recordId = id
-
-    if (id) {
-      await sql`
-        update research_items
-        set
-          item_type = ${payload.itemType},
-          title = ${payload.title},
-          short_description = ${payload.shortDescription},
-          abstract = ${payload.abstract},
-          event_or_journal = ${payload.eventOrJournal},
-          authors = ${payload.authors},
-          publication_date = ${payload.publicationDate},
-          status = ${payload.status},
-          paper_url = ${payload.paperUrl},
-          code_url = ${payload.codeUrl},
-          image_url = ${payload.imageUrl},
-          featured = ${payload.featured},
-          sort_order = ${payload.sortOrder},
-          updated_at = now()
-        where id = ${id}
-      `
-    } else {
-      const inserted = await sql`
-        insert into research_items (
-          item_type, title, short_description, abstract, event_or_journal, authors, publication_date,
-          status, paper_url, code_url, image_url, featured, sort_order
-        ) values (
-          ${payload.itemType}, ${payload.title}, ${payload.shortDescription}, ${payload.abstract},
-          ${payload.eventOrJournal}, ${payload.authors}, ${payload.publicationDate}, ${payload.status},
-          ${payload.paperUrl}, ${payload.codeUrl}, ${payload.imageUrl}, ${payload.featured}, ${payload.sortOrder}
-        )
-        returning id
-      `
-      recordId = inserted[0].id
-    }
-
-    await replaceTags(sql, "research_tags", recordId, formData.get("tags"))
+    await sql.begin(async (transaction) => {
+      let recordId = id
+      if (id) {
+        const updated = await transaction`
+          update research_items
+          set item_type = ${payload.itemType}, title = ${payload.title}, short_description = ${payload.shortDescription},
+              abstract = ${payload.abstract}, event_or_journal = ${payload.eventOrJournal}, authors = ${payload.authors},
+              publication_date = ${payload.publicationDate}, status = ${payload.status}, paper_url = ${payload.paperUrl},
+              code_url = ${payload.codeUrl}, image_url = ${payload.imageUrl}, featured = ${payload.featured},
+              sort_order = ${payload.sortOrder}, updated_at = now()
+          where id = ${id} returning id
+        `
+        if (!updated[0]) throw new Error("Research item no longer exists.")
+      } else {
+        const inserted = await transaction`
+          insert into research_items (item_type, title, short_description, abstract, event_or_journal, authors, publication_date,
+            status, paper_url, code_url, image_url, featured, sort_order)
+          values (${payload.itemType}, ${payload.title}, ${payload.shortDescription}, ${payload.abstract}, ${payload.eventOrJournal},
+            ${payload.authors}, ${payload.publicationDate}, ${payload.status}, ${payload.paperUrl}, ${payload.codeUrl},
+            ${payload.imageUrl}, ${payload.featured}, ${payload.sortOrder}) returning id
+        `
+        recordId = inserted[0].id
+      }
+      await replaceTags(transaction, "research_tags", recordId, formData.get("tags"))
+    })
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", id ? "Research item updated." : "Research item added.")
   } catch (error) {
     rethrowRedirect(error)
     console.error(error)
-    redirectToDashboard(tab, "error", "Failed to save research item.")
+    redirectToDashboard(tab, "error", friendlyMutationError(error, "Failed to save research item."))
   }
 }
 
 export async function deleteResearchAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "research")
   const id = normalizeOptional(formData.get("id"))
@@ -832,7 +845,13 @@ export async function deleteResearchAction(formData) {
   }
 
   try {
-    await sql`delete from research_items where id = ${id}`
+    await sql.begin(async (transaction) => {
+      await transaction`
+        update skills
+        set applied_in_projects = array_remove(array_remove(applied_in_projects, ${`research:${id}`}), ${id})
+      `
+      await transaction`delete from research_items where id = ${id}`
+    })
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", "Research item deleted.")
   } catch (error) {
@@ -843,6 +862,7 @@ export async function deleteResearchAction(formData) {
 }
 
 export async function saveSocialLinkAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "socials")
 
@@ -856,7 +876,7 @@ export async function saveSocialLinkAction(formData) {
     const payload = {
       platform,
       label: normalizeOptional(formData.get("label")) || platform.replace(/[_-]/g, " ").replace(/\b\w/g, (match) => match.toUpperCase()),
-      url: String(formData.get("url") || "").trim(),
+      url: urlValue(formData.get("url"), "Social URL"),
       iconName: normalizeOptional(formData.get("icon_name")) || platform,
       sortOrder: normalizeNumber(formData.get("sort_order")),
       isVisible: normalizeCheckbox(formData.get("is_visible")),
@@ -865,6 +885,10 @@ export async function saveSocialLinkAction(formData) {
     if (!payload.platform || !payload.url) {
       redirectToDashboard(tab, "error", "Social platform and URL are required.")
     }
+    const duplicate = id
+      ? await sql`select id from social_links where lower(platform) = ${payload.platform} and id <> ${id} limit 1`
+      : await sql`select id from social_links where lower(platform) = ${payload.platform} limit 1`
+    if (duplicate[0]) redirectToDashboard(tab, "error", "A link for this platform already exists. Edit the existing item instead.")
 
     if (id) {
       await sql`
@@ -890,11 +914,12 @@ export async function saveSocialLinkAction(formData) {
   } catch (error) {
     rethrowRedirect(error)
     console.error(error)
-    redirectToDashboard(tab, "error", "Failed to save social link.")
+    redirectToDashboard(tab, "error", friendlyMutationError(error, "Failed to save social link."))
   }
 }
 
 export async function deleteSocialLinkAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "socials")
   const id = normalizeOptional(formData.get("id"))
@@ -915,6 +940,7 @@ export async function deleteSocialLinkAction(formData) {
 }
 
 export async function saveAchievementAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "achievements")
 
@@ -927,9 +953,9 @@ export async function saveAchievementAction(formData) {
     const payload = {
       title: String(formData.get("title") || "").trim(),
       issuer: normalizeOptional(formData.get("issuer")),
-      achievementDate: normalizeOptional(formData.get("achievement_date")),
+      achievementDate: dateValue(formData.get("achievement_date"), "Achievement date"),
       description: normalizeOptional(formData.get("description")),
-      imageUrl: normalizeOptional(formData.get("image_url")),
+      imageUrl: urlValue(formData.get("image_url"), "Achievement image URL", { allowRelative: true }),
       featured: normalizeCheckbox(formData.get("featured")),
       sortOrder: normalizeNumber(formData.get("sort_order")),
     }
@@ -938,45 +964,37 @@ export async function saveAchievementAction(formData) {
       redirectToDashboard(tab, "error", "Achievement title is required.")
     }
 
-    let recordId = id
-
-    if (id) {
-      await sql`
-        update achievements
-        set
-          title = ${payload.title},
-          issuer = ${payload.issuer},
-          achievement_date = ${payload.achievementDate},
-          description = ${payload.description},
-          image_url = ${payload.imageUrl},
-          featured = ${payload.featured},
-          sort_order = ${payload.sortOrder}
-        where id = ${id}
-      `
-    } else {
-      const inserted = await sql`
-        insert into achievements (
-          title, issuer, achievement_date, description, image_url, featured, sort_order
-        ) values (
-          ${payload.title}, ${payload.issuer}, ${payload.achievementDate}, ${payload.description},
-          ${payload.imageUrl}, ${payload.featured}, ${payload.sortOrder}
-        )
-        returning id
-      `
-      recordId = inserted[0].id
-    }
-
-    await replaceTags(sql, "achievement_tags", recordId, formData.get("tags"))
+    await sql.begin(async (transaction) => {
+      let recordId = id
+      if (id) {
+        const updated = await transaction`
+          update achievements
+          set title = ${payload.title}, issuer = ${payload.issuer}, achievement_date = ${payload.achievementDate},
+              description = ${payload.description}, image_url = ${payload.imageUrl}, featured = ${payload.featured}, sort_order = ${payload.sortOrder}
+          where id = ${id} returning id
+        `
+        if (!updated[0]) throw new Error("Achievement no longer exists.")
+      } else {
+        const inserted = await transaction`
+          insert into achievements (title, issuer, achievement_date, description, image_url, featured, sort_order)
+          values (${payload.title}, ${payload.issuer}, ${payload.achievementDate}, ${payload.description},
+                  ${payload.imageUrl}, ${payload.featured}, ${payload.sortOrder}) returning id
+        `
+        recordId = inserted[0].id
+      }
+      await replaceTags(transaction, "achievement_tags", recordId, formData.get("tags"))
+    })
     revalidatePortfolioPaths()
     redirectToDashboard(tab, "success", id ? "Achievement updated." : "Achievement added.")
   } catch (error) {
     rethrowRedirect(error)
     console.error(error)
-    redirectToDashboard(tab, "error", "Failed to save achievement.")
+    redirectToDashboard(tab, "error", friendlyMutationError(error, "Failed to save achievement."))
   }
 }
 
 export async function deleteAchievementAction(formData) {
+  await requireAdmin()
   const sql = getSql()
   const tab = getReturnTab(formData, "achievements")
   const id = normalizeOptional(formData.get("id"))

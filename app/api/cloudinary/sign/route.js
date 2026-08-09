@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto"
 import { NextResponse } from "next/server"
+import { getAdminSession } from "@/lib/admin-auth"
 
 function getCloudinaryConfig() {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME
@@ -9,6 +10,10 @@ function getCloudinaryConfig() {
 }
 
 export async function POST(request) {
+  if (!(await getAdminSession())) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
+  }
+
   const { cloudName, apiKey, apiSecret } = getCloudinaryConfig()
 
   if (!cloudName || !apiKey || !apiSecret) {
@@ -16,7 +21,11 @@ export async function POST(request) {
   }
 
   const body = await request.json().catch(() => ({}))
-  const folder = String(body.folder || "portfolio").trim()
+  const folder = String(body.folder || "portfolio").trim().replace(/[^a-zA-Z0-9/_-]/g, "")
+  const resourceType = body.resourceType === "raw" ? "raw" : "image"
+  if (!folder.startsWith("portfolio")) {
+    return NextResponse.json({ error: "Invalid upload folder." }, { status: 400 })
+  }
   const timestamp = Math.floor(Date.now() / 1000)
   const signatureBase = `folder=${folder}&timestamp=${timestamp}${apiSecret}`
   const signature = createHash("sha1").update(signatureBase).digest("hex")
@@ -26,6 +35,7 @@ export async function POST(request) {
     apiKey,
     timestamp,
     folder,
+    resourceType,
     signature,
   })
 }

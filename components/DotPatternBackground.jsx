@@ -2,7 +2,14 @@
 
 import { useEffect, useRef } from "react"
 
-export default function DotPatternBackground() {
+function hexToRgb(value, fallback) {
+  const match = /^#([0-9a-f]{6})$/i.exec(value || "")
+  if (!match) return fallback
+  const number = Number.parseInt(match[1], 16)
+  return { r: (number >> 16) & 255, g: (number >> 8) & 255, b: number & 255 }
+}
+
+export default function DotPatternBackground({ baseColor = "#2a2a2a", highlightColor = "#ffffff", hoverGlow = "#7dd3fc" }) {
   const canvasRef = useRef(null)
 
   useEffect(() => {
@@ -18,6 +25,9 @@ export default function DotPatternBackground() {
     const influenceRadius = 100
     const flashLifetime = 70
     const flashes = []
+    const baseRgb = hexToRgb(baseColor, { r: 42, g: 42, b: 42 })
+    const highlightRgb = hexToRgb(highlightColor, { r: 255, g: 255, b: 255 })
+    const glowRgb = hexToRgb(hoverGlow, { r: 125, g: 211, b: 252 })
     let animationFrame = null
 
     const resize = () => {
@@ -138,7 +148,10 @@ export default function DotPatternBackground() {
 
           context.beginPath()
           context.arc(x, y, size, 0, Math.PI * 2)
-          context.fillStyle = `rgba(233, 244, 255, ${glow})`
+          const red = Math.round(baseRgb.r + (highlightRgb.r - baseRgb.r) * intensity)
+          const green = Math.round(baseRgb.g + (highlightRgb.g - baseRgb.g) * intensity)
+          const blue = Math.round(baseRgb.b + (highlightRgb.b - baseRgb.b) * intensity)
+          context.fillStyle = `rgba(${red}, ${green}, ${blue}, ${glow})`
           context.fill()
         }
       }
@@ -154,7 +167,7 @@ export default function DotPatternBackground() {
 
         const life = 1 - age / flash.duration
         context.lineWidth = 0.42
-        context.strokeStyle = `rgba(190, 242, 255, ${life * 0.48})`
+        context.strokeStyle = `rgba(${glowRgb.r}, ${glowRgb.g}, ${glowRgb.b}, ${life * 0.48})`
 
         for (let pointIndex = 0; pointIndex < flash.points.length - 1; pointIndex += 1) {
           const from = flash.points[pointIndex]
@@ -200,7 +213,7 @@ export default function DotPatternBackground() {
         window.cancelAnimationFrame(animationFrame)
       }
     }
-  }, [])
+  }, [baseColor, highlightColor, hoverGlow])
 
   return <canvas ref={canvasRef} className="dot-grid-bg" aria-hidden="true" />
 }

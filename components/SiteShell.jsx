@@ -8,7 +8,13 @@ export default async function SiteShell({ children }) {
 
   return (
     <div className="site-frame">
-      <DotPatternBackground />
+      {siteMeta.dotBackgroundEnabled ? (
+        <DotPatternBackground
+          baseColor={siteMeta.dotBackgroundColor}
+          highlightColor={siteMeta.dotHighlightColor}
+          hoverGlow={siteMeta.dotHoverGlow}
+        />
+      ) : null}
       <div className="site-noise" />
       <Navbar navigationLinks={navigationLinks} siteMeta={siteMeta} />
       <main className="relative z-10 overflow-x-hidden">{children}</main>

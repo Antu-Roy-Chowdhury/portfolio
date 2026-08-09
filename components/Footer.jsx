@@ -38,7 +38,9 @@ export default function Footer({ footerLinks = [], siteMeta }) {
             <Image src={siteMeta.logo} alt={siteMeta.shortName} width={179} height={45} className="w-auto h-8" /></Link>
           <h3 className="max-w-md text-2xl font-semibold text-white">{siteMeta.role}</h3>
           <p className="max-w-lg text-sm leading-7 text-slate-400">{siteMeta.about}</p>
-          <p className="text-sm text-slate-500">&copy; {new Date().getFullYear()} {siteMeta.name}. All rights reserved.</p>
+          <p className="text-sm text-slate-500">
+            {siteMeta.footerText || <>&copy; {new Date().getFullYear()} {siteMeta.name}. All rights reserved.</>}
+          </p>
         </div>
 
         <div>
@@ -61,7 +63,7 @@ export default function Footer({ footerLinks = [], siteMeta }) {
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
             {siteMeta.socialLinks.map((item) => {
-              const Icon = getSocialIcon(item.platform || item.iconName || item.label)
+              const Icon = getSocialIcon(item.iconName || item.platform || item.label)
               return (
                 <Link
                   key={item.label}

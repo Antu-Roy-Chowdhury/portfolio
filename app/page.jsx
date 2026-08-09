@@ -44,12 +44,23 @@ export default async function Home() {
               <Link href={hero.primaryButtonUrl} className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200">
                 {hero.primaryButtonLabel}
               </Link>
-              <Link
-                href={hero.secondaryButtonUrl}
-                className="rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10"
-              >
-                {hero.secondaryButtonLabel}
-              </Link>
+              {hero.secondaryButtonUrl.startsWith("/") ? (
+                <Link
+                  href={hero.secondaryButtonUrl}
+                  className="rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+                >
+                  {hero.secondaryButtonLabel}
+                </Link>
+              ) : (
+                <a
+                  href={hero.secondaryButtonUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+                >
+                  {hero.secondaryButtonLabel}
+                </a>
+              )}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -76,7 +87,7 @@ export default async function Home() {
             {/* The Main Oval Container */}
             <div className="relative aspect-[5/6] overflow-hidden rounded-full shadow-xl">
               <Image 
-                src={siteMeta.portrait} 
+                src={hero.image}
                 alt={siteMeta.name} 
                 fill 
                 className="object-cover object-top scale-[1]" 
@@ -91,6 +102,11 @@ export default async function Home() {
         <div className="grid gap-6 lg:grid-cols-3">
           {strengths.map((item) => (
             <article key={item.title} className="rounded-[2rem] border border-white/10 bg-white/5 p-8">
+              {item.image ? (
+                <div className="relative mb-6 aspect-[16/9] overflow-hidden rounded-[1.25rem] border border-white/10">
+                  <Image src={item.image} alt="" fill className="object-cover" />
+                </div>
+              ) : null}
               <p className="text-sm uppercase tracking-[0.28em] text-sky-200/80">Strength</p>
               <h2 className="mt-4 text-2xl font-semibold text-white">{item.title}</h2>
               <p className="mt-4 text-sm leading-7 text-slate-400">{item.description}</p>
