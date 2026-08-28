@@ -1,16 +1,17 @@
 import Image from "next/image"
 import Link from "next/link"
+import RecognitionGrid from "@/components/RecognitionGrid"
 import SiteShell from "@/components/SiteShell"
 import { getHomeContent } from "@/lib/portfolio-content"
 <meta name="google-site-verification" content="6ucf9Waw55dvsgAfqWAXzRxHfsrnWFajHQZjkQUileg" />
 {/* <meta name="google-site-verification" content="DLkOFY-jUyuJxgULwkiJVd-LOrJJc6EKftkU_zwrYp0" /> */}
 export default async function Home() {
-  const { experiences, featuredProjects, hero, highlightStats, siteMeta, skillGroups, strengths } = await getHomeContent()
+  const { experiences, featuredProjects, featuredResearch, hero, highlightStats, recognitionItems, researchMetrics, siteMeta, skillGroups, strengths } = await getHomeContent()
   const personSchema = {
     "@context": "https://schema.org",
     "@type": "Person",
     name: siteMeta.name,
-    url: process.env.NEXT_PUBLIC_SITE_URL || "https://anturoychowdhury.vercel.app",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "https://www.anturoychowdhury.me",
     image: siteMeta.portrait,
     jobTitle: "Research-oriented software developer",
     alumniOf: "Rajshahi University of Engineering and Technology",
@@ -70,8 +71,19 @@ export default async function Home() {
                   <p className="mt-2 text-sm text-slate-400">{item.label}</p>
                 </div>
               ))}
+            {researchMetrics.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur"
+              >
+                <p className="text-3xl font-semibold text-white">{item.value}</p>
+                <p className="mt-2 text-sm text-slate-400">{item.label}</p>
+              </div>
+              ))}
             </div>
           </div>
+          {/* Research Metrics Section */}
+ 
 
           {/* <div className="order-1 relative mx-auto w-full max-w-[17rem] sm:max-w-[21rem] lg:order-2 lg:max-w-[29rem] xl:max-w-[32rem]">
             <div className="absolute inset-x-8 bottom-2 top-10 rounded-full bg-sky-300/10 blur-3xl" />
@@ -97,9 +109,16 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
+      {/* <section className="mx-auto max-w-[88rem] px-5 py-8" aria-labelledby="research-metrics-heading">
+        <div className="mb-8">
+          <p className="section-kicker">Research metrics</p>
+          <h2 id="research-metrics-heading" className="section-title">A concise view of research reach and momentum.</h2>
+        </div>
+        
+      </section> */}
       <section className="mx-auto max-w-[88rem] px-5 py-8">
         <div className="grid gap-6 lg:grid-cols-3">
+
           {strengths.map((item) => (
             <article key={item.title} className="rounded-[2rem] border border-white/10 bg-white/5 p-8">
               {item.image ? (
@@ -163,6 +182,73 @@ export default async function Home() {
         </div>
       </section>
 
+      {featuredResearch.length ? (
+        <section className="mx-auto max-w-[88rem] px-5 pb-20">
+          <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="section-kicker">Selected Research</p>
+              <h2 className="section-title">Featured publications and research work.</h2>
+            </div>
+            <Link href="/research" className="text-sm text-sky-200 transition hover:text-white">
+              See all research
+            </Link>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            {featuredResearch.map((research) => (
+              <article key={research.id || research.title} className="group overflow-hidden rounded-[2rem] border border-white/10 bg-[#0c1219]/90">
+                {research.image ? (
+                  <div className="relative h-56 overflow-hidden">
+                    <Image
+                      src={research.image}
+                      alt={research.title}
+                      fill
+                      className="object-cover transition duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0c1219] via-[#0c1219]/20 to-transparent" />
+                  </div>
+                ) : (
+                  <div className="flex h-56 items-end bg-[radial-gradient(circle_at_top_right,rgba(125,211,252,0.18),transparent_45%),linear-gradient(135deg,#0e1a27,#081019)] p-6">
+                    <p className="max-w-xs text-sm uppercase tracking-[0.28em] text-sky-200/70">{research.venue}</p>
+                  </div>
+                )}
+                <div className="space-y-4 p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span className="rounded-full border border-sky-300/20 bg-sky-300/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-sky-100">
+                      {research.kind}
+                    </span>
+                    <span className="text-xs text-slate-500">{research.year || research.status}</span>
+                  </div>
+                  <h3 className="text-2xl font-semibold leading-tight text-white">{research.title}</h3>
+
+{/* Clamps text to 2 lines with ellipsis */}
+<p className="line-clamp-2 text-sm leading-7 text-slate-400" title={research.summary}>
+  {research.summary}
+</p>
+
+<div className="flex flex-wrap gap-2">
+  {research.tags.slice(0, 4).map((tag) => (
+    <span key={tag} className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">
+      {tag}
+    </span>
+  ))}
+</div>
+                  {research.paperUrl ? (
+                    <a href={research.paperUrl} target="_blank" rel="noreferrer" className="inline-flex text-sm text-sky-200 transition hover:text-white">
+                      Read paper
+                    </a>
+                  ) : (
+                    <Link href="/research" className="inline-flex text-sm text-sky-200 transition hover:text-white">
+                      View research
+                    </Link>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section className="mx-auto max-w-[88rem] px-5 pb-20">
         <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
           <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8">
@@ -209,6 +295,7 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      <RecognitionGrid items={recognitionItems} heading="Selected awards, leadership milestones, and recognitions." />
     </SiteShell>
   )
 }

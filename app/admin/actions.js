@@ -28,6 +28,7 @@ import {
   uniqueLines,
   urlValue,
   yearValue,
+  numberValue,
 } from "@/lib/admin-validation"
 
 function normalizeCheckbox(value) {
@@ -247,6 +248,11 @@ export async function saveHomeSectionAction(formData) {
       secondaryButtonLabel: normalizeOptional(formData.get("secondary_button_label")),
       secondaryButtonUrl: urlValue(formData.get("secondary_button_url"), "Secondary button URL", { allowRelative: true }),
       imageUrl: urlValue(formData.get("image_url"), "Image URL", { allowRelative: true }),
+      researchInterestScore: numberValue(formData.get("research_interest_score"), "Research Interest Score", {
+        fallback: 0,
+        min: 0,
+        max: 100,
+      }),
       isActive: normalizeCheckbox(formData.get("is_active")),
       sortOrder: normalizeNumber(formData.get("sort_order")),
     }
@@ -274,6 +280,7 @@ export async function saveHomeSectionAction(formData) {
           secondary_button_label = ${payload.secondaryButtonLabel},
           secondary_button_url = ${payload.secondaryButtonUrl},
           image_url = ${payload.imageUrl},
+          research_interest_score = ${payload.researchInterestScore},
           is_active = ${payload.isActive},
           sort_order = ${payload.sortOrder},
           updated_at = now()
@@ -284,12 +291,12 @@ export async function saveHomeSectionAction(formData) {
         insert into home_sections (
           section_key, title, subtitle, description, badge, primary_button_label,
           primary_button_url, secondary_button_label, secondary_button_url, image_url,
-          is_active, sort_order
+          research_interest_score, is_active, sort_order
         ) values (
           ${payload.sectionKey}, ${payload.title}, ${payload.subtitle}, ${payload.description},
           ${payload.badge}, ${payload.primaryButtonLabel}, ${payload.primaryButtonUrl},
           ${payload.secondaryButtonLabel}, ${payload.secondaryButtonUrl}, ${payload.imageUrl},
-          ${payload.isActive}, ${payload.sortOrder}
+          ${payload.researchInterestScore}, ${payload.isActive}, ${payload.sortOrder}
         )
       `
     }
@@ -790,8 +797,10 @@ export async function saveResearchAction(formData) {
       publicationDate: dateValue(formData.get("publication_date"), "Publication date"),
       status: normalizeOptional(formData.get("status")) || "in_progress",
       paperUrl: urlValue(formData.get("paper_url"), "Paper URL", { allowRelative: true }),
+      pdfUrl: urlValue(formData.get("pdf_url"), "PDF URL"),
       codeUrl: urlValue(formData.get("code_url"), "Code URL"),
       imageUrl: urlValue(formData.get("image_url"), "Research image URL", { allowRelative: true }),
+      citationCount: integerValue(formData.get("citation_count"), "Citation count", { fallback: 0, min: 0 }),
       featured: normalizeCheckbox(formData.get("featured")),
       sortOrder: normalizeNumber(formData.get("sort_order")),
     }
@@ -808,7 +817,8 @@ export async function saveResearchAction(formData) {
           set item_type = ${payload.itemType}, title = ${payload.title}, short_description = ${payload.shortDescription},
               abstract = ${payload.abstract}, event_or_journal = ${payload.eventOrJournal}, authors = ${payload.authors},
               publication_date = ${payload.publicationDate}, status = ${payload.status}, paper_url = ${payload.paperUrl},
-              code_url = ${payload.codeUrl}, image_url = ${payload.imageUrl}, featured = ${payload.featured},
+              pdf_url = ${payload.pdfUrl}, code_url = ${payload.codeUrl}, image_url = ${payload.imageUrl},
+              citation_count = ${payload.citationCount}, featured = ${payload.featured},
               sort_order = ${payload.sortOrder}, updated_at = now()
           where id = ${id} returning id
         `
@@ -816,10 +826,10 @@ export async function saveResearchAction(formData) {
       } else {
         const inserted = await transaction`
           insert into research_items (item_type, title, short_description, abstract, event_or_journal, authors, publication_date,
-            status, paper_url, code_url, image_url, featured, sort_order)
+            status, paper_url, pdf_url, code_url, image_url, citation_count, featured, sort_order)
           values (${payload.itemType}, ${payload.title}, ${payload.shortDescription}, ${payload.abstract}, ${payload.eventOrJournal},
-            ${payload.authors}, ${payload.publicationDate}, ${payload.status}, ${payload.paperUrl}, ${payload.codeUrl},
-            ${payload.imageUrl}, ${payload.featured}, ${payload.sortOrder}) returning id
+            ${payload.authors}, ${payload.publicationDate}, ${payload.status}, ${payload.paperUrl}, ${payload.pdfUrl},
+            ${payload.codeUrl}, ${payload.imageUrl}, ${payload.citationCount}, ${payload.featured}, ${payload.sortOrder}) returning id
         `
         recordId = inserted[0].id
       }
@@ -957,6 +967,9 @@ export async function saveAchievementAction(formData) {
       description: normalizeOptional(formData.get("description")),
       imageUrl: urlValue(formData.get("image_url"), "Achievement image URL", { allowRelative: true }),
       featured: normalizeCheckbox(formData.get("featured")),
+      showOnHome: normalizeCheckbox(formData.get("show_on_home")),
+      showOnProjects: normalizeCheckbox(formData.get("show_on_projects")),
+      showOnResearch: normalizeCheckbox(formData.get("show_on_research")),
       sortOrder: normalizeNumber(formData.get("sort_order")),
     }
 
@@ -970,15 +983,19 @@ export async function saveAchievementAction(formData) {
         const updated = await transaction`
           update achievements
           set title = ${payload.title}, issuer = ${payload.issuer}, achievement_date = ${payload.achievementDate},
-              description = ${payload.description}, image_url = ${payload.imageUrl}, featured = ${payload.featured}, sort_order = ${payload.sortOrder}
+              description = ${payload.description}, image_url = ${payload.imageUrl}, featured = ${payload.featured},
+              show_on_home = ${payload.showOnHome}, show_on_projects = ${payload.showOnProjects},
+              show_on_research = ${payload.showOnResearch}, sort_order = ${payload.sortOrder}
           where id = ${id} returning id
         `
         if (!updated[0]) throw new Error("Achievement no longer exists.")
       } else {
         const inserted = await transaction`
-          insert into achievements (title, issuer, achievement_date, description, image_url, featured, sort_order)
+          insert into achievements (title, issuer, achievement_date, description, image_url, featured,
+            show_on_home, show_on_projects, show_on_research, sort_order)
           values (${payload.title}, ${payload.issuer}, ${payload.achievementDate}, ${payload.description},
-                  ${payload.imageUrl}, ${payload.featured}, ${payload.sortOrder}) returning id
+                  ${payload.imageUrl}, ${payload.featured}, ${payload.showOnHome}, ${payload.showOnProjects},
+                  ${payload.showOnResearch}, ${payload.sortOrder}) returning id
         `
         recordId = inserted[0].id
       }

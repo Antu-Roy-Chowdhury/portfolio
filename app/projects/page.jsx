@@ -1,14 +1,16 @@
 import Image from "next/image"
 import Link from "next/link"
 import PageHeroGraphic from "@/components/PageHeroGraphic"
+import RecognitionGrid from "@/components/RecognitionGrid"
 import SiteShell from "@/components/SiteShell"
-import { getProjects } from "@/lib/portfolio-content"
+import { getAchievementItems, getProjects } from "@/lib/portfolio-content"
 
 function FilterLink({ active, href, label }) {
   return (
     <Link
       href={href}
-      className={`rounded-full border px-4 py-2 text-sm transition ${
+      aria-current={active ? "page" : undefined}
+      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
         active
           ? "border-[#7dd3fc]/55 bg-[rgba(125,211,252,0.18)] text-white shadow-[0_0_0_1px_rgba(125,211,252,0.28),0_0_26px_rgba(125,211,252,0.22)]"
           : "border-white/10 bg-transparent text-slate-300 hover:border-sky-300/25 hover:text-white"
@@ -20,7 +22,7 @@ function FilterLink({ active, href, label }) {
 }
 
 export default async function ProjectsPage({ searchParams }) {
-  const projects = await getProjects()
+  const [projects, recognitionItems] = await Promise.all([getProjects(), getAchievementItems("projects")])
   const params = await searchParams
   const activeCatagory = params?.category || "All"
   const activeTag = params?.tag || "All"
@@ -52,15 +54,21 @@ export default async function ProjectsPage({ searchParams }) {
         </div>
 
         <div className="mt-14 space-y-8">
-          <div className="flex flex-wrap gap-3">
-            {catOptions.map((category) => (
-              <FilterLink key={category} active={category === activeCatagory} href={category === "All" ? `/projects${activeTag !== "All" ? `?tag=${encodeURIComponent(activeTag)}` : ""}` : `/projects?category=${encodeURIComponent(category)}${activeTag !== "All" ? `&tag=${encodeURIComponent(activeTag)}` : ""}`} label={category} />
-            ))}
+          <div className="space-y-3">
+            <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Project type</p>
+            <div className="flex flex-wrap gap-2">
+              {catOptions.map((category) => (
+                <FilterLink key={category} active={category === activeCatagory} href={category === "All" ? `/projects${activeTag !== "All" ? `?tag=${encodeURIComponent(activeTag)}` : ""}` : `/projects?category=${encodeURIComponent(category)}${activeTag !== "All" ? `&tag=${encodeURIComponent(activeTag)}` : ""}`} label={category} />
+              ))}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-3">
-            {tagOptions.map((tag) => (
-              <FilterLink key={tag} active={tag === activeTag} href={tag === "All" ? `/projects${activeCatagory !== "All" ? `?category=${encodeURIComponent(activeCatagory)}` : ""}` : `/projects?${activeCatagory !== "All" ? `category=${encodeURIComponent(activeCatagory)}&` : ""}tag=${encodeURIComponent(tag)}`} label={tag} />
-            ))}
+          <div className="space-y-3">
+            <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Skills &amp; technologies</p>
+            <div className="flex flex-wrap gap-2">
+              {tagOptions.map((tag) => (
+                <FilterLink key={tag} active={tag === activeTag} href={tag === "All" ? `/projects${activeCatagory !== "All" ? `?category=${encodeURIComponent(activeCatagory)}` : ""}` : `/projects?${activeCatagory !== "All" ? `category=${encodeURIComponent(activeCatagory)}&` : ""}tag=${encodeURIComponent(tag)}`} label={tag} />
+              ))}
+            </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -113,6 +121,7 @@ export default async function ProjectsPage({ searchParams }) {
           ) : null}
         </div>
       </section>
+      <RecognitionGrid items={recognitionItems} heading="Awards, milestones, and recognitions connected to project work." />
     </SiteShell>
   )
 }

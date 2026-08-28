@@ -14,9 +14,16 @@ const sql = postgres(process.env.DATABASE_URL, {
 })
 
 try {
-  const migration = await readFile(new URL("../migrations/20260809_admin_form_columns.sql", import.meta.url), "utf8")
-  await sql.unsafe(migration)
-  console.log("Admin form column migration applied successfully.")
+  const migrations = [
+    "../migrations/20260809_admin_form_columns.sql",
+    "../migrations/20260828_research_documents_metrics_recognitions.sql",
+  ]
+
+  for (const migrationPath of migrations) {
+    const migration = await readFile(new URL(migrationPath, import.meta.url), "utf8")
+    await sql.unsafe(migration)
+  }
+  console.log("Admin and research feature migrations applied successfully.")
 } finally {
   await sql.end()
 }

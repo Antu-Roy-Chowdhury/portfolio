@@ -25,8 +25,8 @@ try {
     await expectOne(await tx`delete from site_settings where id = ${settings[0].id} returning id`, "site settings delete")
     verified.push("site settings")
 
-    const section = await tx`insert into home_sections (section_key, title) values (${marker.replaceAll("-", "_")}, 'Audit') returning id`
-    await expectOne(await tx`update home_sections set is_active = false, sort_order = 9 where id = ${section[0].id} returning id`, "home section update")
+    const section = await tx`insert into home_sections (section_key, title, research_interest_score) values (${marker.replaceAll("-", "_")}, 'Audit', 85) returning id`
+    await expectOne(await tx`update home_sections set is_active = false, sort_order = 9, research_interest_score = 86 where id = ${section[0].id} returning id`, "home section update")
     await expectOne(await tx`delete from home_sections where id = ${section[0].id} returning id`, "home section delete")
     verified.push("home sections")
 
@@ -57,11 +57,12 @@ try {
     verified.push("experience + highlights")
 
     const research = await tx`
-      insert into research_items (item_type, title, authors, code_url)
-      values ('conference', 'Audit research', 'Audit Author', 'https://example.com/code') returning id
+      insert into research_items (item_type, title, authors, code_url, pdf_url, citation_count)
+      values ('conference', 'Audit research', 'Audit Author', 'https://example.com/code',
+        'https://res.cloudinary.com/demo/raw/upload/audit.pdf', 12) returning id
     `
     await tx`insert into research_tags (research_item_id, tag) values (${research[0].id}, 'Audit')`
-    await expectOne(await tx`update research_items set status = 'published', featured = true where id = ${research[0].id} returning id`, "research update")
+    await expectOne(await tx`update research_items set status = 'published', featured = true, citation_count = 13 where id = ${research[0].id} returning id`, "research update")
 
     const skill = await tx`
       insert into skills (name, category, proficiency_bucket, applied_in_projects)
@@ -82,9 +83,12 @@ try {
     await expectOne(await tx`delete from social_links where id = ${social[0].id} returning id`, "social delete")
     verified.push("social links")
 
-    const achievement = await tx`insert into achievements (title, issuer) values ('Audit achievement', ${marker}) returning id`
+    const achievement = await tx`
+      insert into achievements (title, issuer, show_on_home, show_on_projects, show_on_research)
+      values ('Audit achievement', ${marker}, true, false, true) returning id
+    `
     await tx`insert into achievement_tags (achievement_id, tag) values (${achievement[0].id}, 'Audit')`
-    await expectOne(await tx`update achievements set featured = true, description = 'Updated' where id = ${achievement[0].id} returning id`, "achievement update")
+    await expectOne(await tx`update achievements set featured = true, description = 'Updated', show_on_projects = true where id = ${achievement[0].id} returning id`, "achievement update")
     await expectOne(await tx`delete from achievements where id = ${achievement[0].id} returning id`, "achievement delete")
     assert.equal((await tx`select id from achievement_tags where achievement_id = ${achievement[0].id}`).length, 0, "achievement tags cascade")
     verified.push("achievements + tags")

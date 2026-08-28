@@ -3,6 +3,35 @@
 import Image from "next/image"
 import { useMemo, useState } from "react"
 
+function PaperActions({ item, compact = false }) {
+  const paperUrl = item.paperUrl || item.url
+  const buttonClass = compact
+    ? "rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+    : "rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+  const primaryClass = compact
+    ? "rounded-full bg-sky-300 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-sky-200"
+    : "rounded-full bg-sky-300 px-5 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200"
+
+  return (
+    <>
+      {paperUrl && paperUrl !== "#" ? (
+        <a href={paperUrl} target="_blank" rel="noreferrer" className={buttonClass}>Paper URL</a>
+      ) : (
+        <span aria-disabled="true" className={`${buttonClass} cursor-not-allowed opacity-45`}>Not published yet</span>
+      )}
+      {item.pdfUrl ? (
+        <>
+          <a href={item.pdfUrl} target="_blank" rel="noreferrer" className={primaryClass}>View Paper</a>
+          <a href={`/api/research/${encodeURIComponent(item.id)}/pdf`} className={buttonClass}>Download PDF</a>
+        </>
+      ) : null}
+      {item.codeUrl && item.codeUrl !== "#" ? (
+        <a href={item.codeUrl} target="_blank" rel="noreferrer" className={buttonClass}>Code / GitHub</a>
+      ) : null}
+    </>
+  )
+}
+
 export default function ResearchCards({ items = [] }) {
   const [activeIndex, setActiveIndex] = useState(null)
   const activeItem = useMemo(() => (activeIndex === null ? null : items[activeIndex] || null), [activeIndex, items])
@@ -28,6 +57,7 @@ export default function ResearchCards({ items = [] }) {
                       <p className="text-xs uppercase tracking-[0.24em] text-sky-200/70">{item.venue}</p>
                       {item.year ? <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">{item.year}</span> : null}
                       {item.kind ? <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">{item.kind}</span> : null}
+                      <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">{item.citationCount || 0} citations</span>
                     </div>
                     <h2 className="text-2xl font-semibold leading-tight text-white">{item.title}</h2>
                     {item.authors ? <p className="text-sm leading-7 text-slate-400">{item.authors}</p> : null}
@@ -59,24 +89,15 @@ export default function ResearchCards({ items = [] }) {
                     </button>
                   ) : null}
                 </div>
-                                    <div className="mt-6 flex flex-wrap gap-3">
+                    <div className="mt-6 flex flex-wrap gap-3">
                       <button
                         type="button"
                         onClick={() => setActiveIndex(index)}
                         className="rounded-full bg-sky-300 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-sky-200"
                       >
-                        ↗ View Paper
+                        View details
                       </button>
-                      {item.codeUrl && item.codeUrl !== "#" ? (
-                        <a
-                          href={item.codeUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-                        >
-                          Code / GitHub
-                        </a>
-                      ) : null}
+                      <PaperActions item={item} compact />
                     </div>
               </div>
             </article>
@@ -104,6 +125,7 @@ export default function ResearchCards({ items = [] }) {
                     </span>
                     {activeItem.year ? <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">{activeItem.year}</span> : null}
                     <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">{activeItem.venue}</span>
+                    <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">{activeItem.citationCount || 0} citations</span>
                   </div>
                   <h2 className="mt-5 text-3xl font-semibold leading-tight text-white md:text-4xl">{activeItem.title}</h2>
                   {activeItem.authors ? <p className="mt-4 text-sm leading-7 text-slate-400">{activeItem.authors}</p> : null}
@@ -124,28 +146,9 @@ export default function ResearchCards({ items = [] }) {
                   </div>
                 ) : null}
               </div>
-               <div className="mt-8 flex flex-wrap gap-4">
-                    {activeItem.url && activeItem.url !== "#" ? (
-                      <a
-                        href={activeItem.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="rounded-full bg-sky-300 px-5 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200"
-                      >
-                        ↗ View Paper
-                      </a>
-                    ) : null}
-                    {activeItem.codeUrl && activeItem.codeUrl !== "#" ? (
-                      <a
-                        href={activeItem.codeUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/10"
-                      >
-                        Code / GitHub
-                      </a>
-                    ) : null}
-                  </div>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <PaperActions item={activeItem} />
+              </div>
             </div>
           </div>
         </div>

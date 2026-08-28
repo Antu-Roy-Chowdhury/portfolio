@@ -9,6 +9,9 @@ export default function CloudinaryImageField({
   folder = "portfolio",
   placeholder = "https://res.cloudinary.com/...",
   mediaType = "image",
+  maxMegabytes,
+  recommendedAspectRatio,
+  helperText = "",
 }) {
   const [value, setValue] = useState(defaultValue)
   const [status, setStatus] = useState("")
@@ -21,20 +24,39 @@ export default function CloudinaryImageField({
 
     const isDocument = mediaType === "document"
     const allowedTypes = isDocument ? ["application/pdf"] : ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]
-    const maxBytes = isDocument ? 15 * 1024 * 1024 : 10 * 1024 * 1024
+    const effectiveMaxMegabytes = maxMegabytes || (isDocument ? 15 : 10)
+    const maxBytes = effectiveMaxMegabytes * 1024 * 1024
     if (!allowedTypes.includes(file.type)) {
       setStatus(isDocument ? "Upload failed: select a PDF file." : "Upload failed: select a JPG, PNG, WebP, GIF, or AVIF image.")
       event.target.value = ""
       return
     }
     if (file.size > maxBytes) {
-      setStatus(`Upload failed: file must be ${isDocument ? "15" : "10"} MB or smaller.`)
+      setStatus(`Upload failed: file must be ${effectiveMaxMegabytes} MB or smaller.`)
       event.target.value = ""
       return
     }
 
+    let dimensionWarning = ""
+    if (!isDocument && recommendedAspectRatio) {
+      dimensionWarning = await new Promise((resolve) => {
+        const preview = new Image()
+        const objectUrl = URL.createObjectURL(file)
+        preview.onload = () => {
+          const actualRatio = preview.naturalWidth / preview.naturalHeight
+          URL.revokeObjectURL(objectUrl)
+          resolve(Math.abs(actualRatio - recommendedAspectRatio) > 0.05 ? " Warning: the image is not close to the recommended 3:2 aspect ratio." : "")
+        }
+        preview.onerror = () => {
+          URL.revokeObjectURL(objectUrl)
+          resolve(" Warning: image dimensions could not be checked.")
+        }
+        preview.src = objectUrl
+      })
+    }
+
     setUploading(true)
-    setStatus("Uploading to Cloudinary...")
+    setStatus(`Uploading to Cloudinary...${dimensionWarning}`)
 
     try {
       const formData = new FormData()
@@ -54,7 +76,7 @@ export default function CloudinaryImageField({
 
       const result = await response.json()
       setValue(result.url)
-      setStatus("Upload complete.")
+      setStatus(`Upload complete.${dimensionWarning}`)
     } catch (error) {
       console.error(error)
       setStatus(`Upload failed: ${error.message}. You can still paste the URL manually.`)
@@ -83,6 +105,7 @@ export default function CloudinaryImageField({
         </label>
         {status ? <p className="text-xs text-slate-400" role="status" aria-live="polite">{status}</p> : null}
       </div>
+      {helperText ? <p className="whitespace-pre-line text-xs leading-6 text-slate-500">{helperText}</p> : null}
     </div>
   )
 }

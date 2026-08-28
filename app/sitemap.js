@@ -1,4 +1,4 @@
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://anturoychowdhury.vercel.app"
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.anturoychowdhury.me"
 
 const staticRoutes = ["", "/about", "/projects", "/skills", "/research", "/contact"]
 

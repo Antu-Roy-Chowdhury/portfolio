@@ -26,13 +26,14 @@ export async function POST(request) {
     if (!(file instanceof File) || !file.size) return NextResponse.json({ error: "Choose a file to upload." }, { status: 400 })
     if (!folder.startsWith("portfolio")) return NextResponse.json({ error: "Invalid upload folder." }, { status: 400 })
     if (resourceType === "raw" && file.type !== "application/pdf") {
-      return NextResponse.json({ error: "Resume uploads must be PDF files." }, { status: 415 })
+      return NextResponse.json({ error: "Document uploads must be PDF files." }, { status: 415 })
     }
     if (resourceType === "image" && !IMAGE_TYPES.has(file.type)) {
       return NextResponse.json({ error: "Images must be JPG, PNG, WebP, GIF, or AVIF files." }, { status: 415 })
     }
-    const maxBytes = resourceType === "raw" ? 15 * 1024 * 1024 : 10 * 1024 * 1024
-    if (file.size > maxBytes) return NextResponse.json({ error: `File must be ${resourceType === "raw" ? 15 : 10} MB or smaller.` }, { status: 413 })
+    const maxMegabytes = resourceType === "raw" ? 15 : folder === "portfolio/projects" ? 5 : 10
+    const maxBytes = maxMegabytes * 1024 * 1024
+    if (file.size > maxBytes) return NextResponse.json({ error: `File must be ${maxMegabytes} MB or smaller.` }, { status: 413 })
     if (!cloudName || (!uploadPreset && !(apiKey && apiSecret))) {
       return NextResponse.json({ error: "Cloudinary upload is not configured." }, { status: 503 })
     }
@@ -62,7 +63,11 @@ export async function POST(request) {
       return NextResponse.json({ error: result?.error?.message || "Cloudinary rejected the upload." }, { status: 502 })
     }
 
-    return NextResponse.json({ url: result.secure_url, resourceType: result.resource_type, format: result.format })
+    return NextResponse.json({
+      url: result.secure_url,
+      resourceType: result.resource_type,
+      format: result.format,
+    })
   } catch (error) {
     console.error("Cloudinary upload route failed:", error)
     return NextResponse.json({ error: "Upload failed. Please try again." }, { status: 500 })

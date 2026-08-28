@@ -11,7 +11,17 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-display",
 })
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://anturoychowdhury.me"
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.anturoychowdhury.me"
+
+const siteNavigationSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    { "@type": "WebSite", name: "Antu Roy Chowdhury", url: "https://www.anturoychowdhury.me/" },
+    { "@type": "SiteNavigationElement", name: "Research", url: "https://www.anturoychowdhury.me/research" },
+    { "@type": "SiteNavigationElement", name: "Projects", url: "https://www.anturoychowdhury.me/projects" },
+    { "@type": "SiteNavigationElement", name: "Skills", url: "https://www.anturoychowdhury.me/skills" },
+  ],
+}
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
@@ -96,6 +106,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${manrope.variable} ${spaceGrotesk.variable} min-h-screen bg-[#05080d] text-white antialiased`}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteNavigationSchema) }} />
         {children}
       </body>
     </html>

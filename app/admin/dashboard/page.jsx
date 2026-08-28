@@ -299,7 +299,14 @@ export default async function AdminDashboardPage({ searchParams }) {
             <TextField label="Case study URL" name="case_study_url" placeholder="Optional" />
             <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
             <div className="lg:col-span-2">
-              <CloudinaryImageField name="cover_image_url" label="Cover image URL" folder="portfolio/projects" />
+              <CloudinaryImageField
+                name="cover_image_url"
+                label="Cover image URL"
+                folder="portfolio/projects"
+                maxMegabytes={5}
+                recommendedAspectRatio={3 / 2}
+                helperText={"Recommended image size: 1200 × 800 px\nAspect ratio: 3:2\nMaximum size: 5 MB\nUse high-quality landscape images."}
+              />
             </div>
             <div className="lg:col-span-2">
               <TextField label="Tech stack" name="tech_stack" placeholder="React, Next.js, PostgreSQL" />
@@ -345,7 +352,15 @@ export default async function AdminDashboardPage({ searchParams }) {
                   <TextField label="Case study URL" name="case_study_url" defaultValue={project.case_study_url || ""} />
                   <TextField label="Sort order" name="sort_order" type="number" defaultValue={project.sort_order ?? 0} />
                   <div className="lg:col-span-2">
-                    <CloudinaryImageField name="cover_image_url" label="Cover image URL" defaultValue={project.cover_image_url || ""} folder="portfolio/projects" />
+                    <CloudinaryImageField
+                      name="cover_image_url"
+                      label="Cover image URL"
+                      defaultValue={project.cover_image_url || ""}
+                      folder="portfolio/projects"
+                      maxMegabytes={5}
+                      recommendedAspectRatio={3 / 2}
+                      helperText={"Recommended image size: 1200 × 800 px\nAspect ratio: 3:2\nMaximum size: 5 MB\nUse high-quality landscape images."}
+                    />
                   </div>
                   <div className="lg:col-span-2">
                     <TextField label="Tech stack" name="tech_stack" defaultValue={(project.tech_stack || []).join(", ")} />
@@ -391,8 +406,17 @@ export default async function AdminDashboardPage({ searchParams }) {
             <TextField label="Primary button label" name="primary_button_label" placeholder="Contact me" />
             <TextField label="Primary button URL" name="primary_button_url" placeholder="/contact" />
             <TextField label="Secondary button label" name="secondary_button_label" placeholder="Download CV" />
-            <TextField label="Secondary button URL" name="secondary_button_url" placeholder="https://..." />
+            <CloudinaryImageField
+              name="secondary_button_url"
+              label="Secondary button URL / CV PDF"
+              folder="portfolio/resume"
+              mediaType="document"
+              maxMegabytes={15}
+              placeholder="Paste a URL or upload a PDF"
+              helperText="Upload a CV in PDF format (maximum 15 MB), or paste an existing URL."
+            />
             <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
+           <TextField label="Research Interest Score (hero section, 0–100)" name="research_interest_score" type="number" min="0" max="100" step="any" defaultValue="0" /> 
             <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
               <input id="home_section_active_new" name="is_active" type="checkbox" defaultChecked />
               <label htmlFor="home_section_active_new" className="text-sm text-slate-300">Visible on homepage</label>
@@ -430,8 +454,26 @@ export default async function AdminDashboardPage({ searchParams }) {
                   <TextField label="Primary button label" name="primary_button_label" defaultValue={item.primary_button_label || ""} />
                   <TextField label="Primary button URL" name="primary_button_url" defaultValue={item.primary_button_url || ""} />
                   <TextField label="Secondary button label" name="secondary_button_label" defaultValue={item.secondary_button_label || ""} />
-                  <TextField label="Secondary button URL" name="secondary_button_url" defaultValue={item.secondary_button_url || ""} />
+                  <CloudinaryImageField
+                    name="secondary_button_url"
+                    label="Secondary button URL / CV PDF"
+                    defaultValue={item.secondary_button_url || ""}
+                    folder="portfolio/resume"
+                    mediaType="document"
+                    maxMegabytes={15}
+                    placeholder="Paste a URL or upload a PDF"
+                    helperText="Upload a CV in PDF format (maximum 15 MB), or paste an existing URL."
+                  />
                   <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
+                  <TextField
+                    label="Research Interest Score (hero section, 0–100)"
+                    name="research_interest_score"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="any"
+                    defaultValue={item.research_interest_score ?? 0}
+                  />
                   <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
                     <input id={`home-section-active-${item.id}`} name="is_active" type="checkbox" defaultChecked={item.is_active} />
                     <label htmlFor={`home-section-active-${item.id}`} className="text-sm text-slate-300">Visible on homepage</label>
@@ -758,9 +800,17 @@ export default async function AdminDashboardPage({ searchParams }) {
             <TextField label="Status" name="status" defaultValue="in_progress" />
             <TextField label="Paper URL" name="paper_url" />
             <TextField label="Code / GitHub URL" name="code_url" />
+            <TextField label="Citation count" name="citation_count" type="number" min="0" defaultValue="0" />
             <TextField label="Sort order" name="sort_order" type="number" defaultValue="0" />
             <TextField label="Tags" name="tags" placeholder="Machine Learning, Accessibility" />
             <CloudinaryImageField name="image_url" label="Research image URL" folder="portfolio/research" />
+            <CloudinaryImageField
+              name="pdf_url"
+              label="Research PDF URL"
+              folder="portfolio/research-pdfs"
+              mediaType="document"
+              placeholder="https://res.cloudinary.com/.../raw/upload/.../paper.pdf"
+            />
             <TextAreaField label="Short description" name="short_description" rows={3} />
             <TextAreaField label="Abstract" name="abstract" rows={5} />
             <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
@@ -793,9 +843,18 @@ export default async function AdminDashboardPage({ searchParams }) {
                   <TextField label="Status" name="status" defaultValue={item.status || "in_progress"} />
                   <TextField label="Paper URL" name="paper_url" defaultValue={item.paper_url || ""} />
                   <TextField label="Code / GitHub URL" name="code_url" defaultValue={item.code_url || ""} />
+                  <TextField label="Citation count" name="citation_count" type="number" min="0" defaultValue={item.citation_count ?? 0} />
                   <TextField label="Sort order" name="sort_order" type="number" defaultValue={item.sort_order ?? 0} />
                   <TextField label="Tags" name="tags" defaultValue={(item.tags || []).join(", ")} />
                   <CloudinaryImageField name="image_url" label="Research image URL" defaultValue={item.image_url || ""} folder="portfolio/research" />
+                  <CloudinaryImageField
+                    name="pdf_url"
+                    label="Research PDF URL"
+                    defaultValue={item.pdf_url || ""}
+                    folder="portfolio/research-pdfs"
+                    mediaType="document"
+                    placeholder="https://res.cloudinary.com/.../raw/upload/.../paper.pdf"
+                  />
                   <TextAreaField label="Short description" name="short_description" defaultValue={item.short_description || ""} rows={3} />
                   <TextAreaField label="Abstract" name="abstract" defaultValue={item.abstract || ""} rows={5} />
                   <div className="flex items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3">
@@ -871,9 +930,9 @@ export default async function AdminDashboardPage({ searchParams }) {
     },
     {
       id: "achievements",
-      label: "Achievements",
+      label: "Recognitions",
       content: (
-        <AdminSection title="Achievements" description="Use this for contests, awards, leadership milestones, and recognitions.">
+        <AdminSection title="Recognitions" description="Manage awards, contests, leadership milestones, and choose exactly where each recognition appears.">
           <form action={saveAchievementAction} data-admin-editor="true" className="grid gap-5 rounded-[1.5rem] border border-dashed border-white/15 bg-black/10 p-5 lg:grid-cols-2">
             <ActionMetaFields tab="achievements" />
             <TextField label="Title" name="title" required />
@@ -889,9 +948,14 @@ export default async function AdminDashboardPage({ searchParams }) {
               <input id="achievement_featured_new" name="featured" type="checkbox" />
               <label htmlFor="achievement_featured_new" className="text-sm text-slate-300">Featured achievement</label>
             </div>
+            <div className="grid gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 p-4 lg:col-span-2 sm:grid-cols-3">
+              <label className="flex items-center gap-3 text-sm text-slate-300"><input name="show_on_home" type="checkbox" /> Show on Home</label>
+              <label className="flex items-center gap-3 text-sm text-slate-300"><input name="show_on_projects" type="checkbox" /> Show on Projects</label>
+              <label className="flex items-center gap-3 text-sm text-slate-300"><input name="show_on_research" type="checkbox" /> Show on Research</label>
+            </div>
             <div className="lg:col-span-2">
               <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
-                Add achievement
+                Add recognition
               </SubmitButton>
             </div>
           </form>
@@ -920,8 +984,13 @@ export default async function AdminDashboardPage({ searchParams }) {
                     <input id={`achievement-featured-${item.id}`} name="featured" type="checkbox" defaultChecked={item.featured} />
                     <label htmlFor={`achievement-featured-${item.id}`} className="text-sm text-slate-300">Featured achievement</label>
                   </div>
+                  <div className="grid gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 p-4 sm:grid-cols-3">
+                    <label className="flex items-center gap-3 text-sm text-slate-300"><input name="show_on_home" type="checkbox" defaultChecked={item.show_on_home} /> Show on Home</label>
+                    <label className="flex items-center gap-3 text-sm text-slate-300"><input name="show_on_projects" type="checkbox" defaultChecked={item.show_on_projects} /> Show on Projects</label>
+                    <label className="flex items-center gap-3 text-sm text-slate-300"><input name="show_on_research" type="checkbox" defaultChecked={item.show_on_research} /> Show on Research</label>
+                  </div>
                   <SubmitButton className="rounded-full bg-sky-300 px-6 py-3 text-sm font-medium text-slate-950 transition hover:bg-sky-200 disabled:cursor-wait disabled:opacity-60">
-                    Save achievement
+                    Save recognition
                   </SubmitButton>
                 </form>
               </ManagementCard>
