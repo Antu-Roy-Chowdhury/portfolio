@@ -9,17 +9,17 @@ export default function RecognitionGrid({ items = [], heading = "Recognition", d
         <p className="section-kicker">Recognition</p>
         <h2 className="section-title mt-4">{heading}</h2>
         {description ? <p className="mt-4 max-w-3xl panel-copy">{description}</p> : null}
-        <div className="mt-10 grid gap-6 lg:grid-cols-2">
+        <div className="mt-10 grid gap-6 lg:grid-cols-3 sm:grid-cols-2">
           {items.map((item) => (
             <article key={item.id || item.title} className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/10">
               <div className="flex items-center gap-2 border-b border-white/10 bg-white/5 px-5 py-3">
                 <span className="h-2.5 w-2.5 rounded-full bg-rose-300/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-amber-300/80" />
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-300/80" />
+                <span className="h-2.5 w-2.5 rounded-full bg-e7merald-300/80" />
               </div>
               {item.image ? (
-                <div className="relative h-52 overflow-hidden border-b border-white/10">
-                  <Image src={item.image} alt={item.title} fill className="object-cover" />
+                <div className="relative aspect-ratio-5/3 h-72 border-b border-white/10">
+                  <Image src={item.image} alt={item.title} layout="fill" objectFit="cover" className="object-cover" />
                 </div>
               ) : null}
               <div className="p-6">
